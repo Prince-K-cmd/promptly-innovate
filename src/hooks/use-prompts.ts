@@ -1,8 +1,20 @@
 
 import { useState, useEffect } from 'react';
-import { supabase, Prompt } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+export type Prompt = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  title: string;
+  text: string;
+  category: string;
+  tags: string[];
+  description?: string;
+  is_public: boolean;
+};
 
 export const usePrompts = (category?: string, searchTerm?: string, tags?: string[]) => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
