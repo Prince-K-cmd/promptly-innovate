@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import HomePage from "@/pages/HomePage";
 import LibraryPage from "@/pages/LibraryPage";
 import CreatePromptPage from "@/pages/CreatePromptPage";
+import PromptBuilderPage from "@/pages/PromptBuilderPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SettingsPage from "@/pages/SettingsPage";
 import LoginPage from "@/pages/LoginPage";
@@ -45,6 +46,7 @@ const App = () => (
                   <Route path="/" element={<HomePage />} />
                   <Route path="/library" element={<LibraryPage />} />
                   <Route path="/create" element={<CreatePromptPage />} />
+                  <Route path="/builder" element={<PromptBuilderPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/search" element={<SearchPage />} />

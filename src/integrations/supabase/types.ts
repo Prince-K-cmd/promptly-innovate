@@ -39,6 +39,99 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_building_history: {
+        Row: {
+          audience: string | null
+          category: string
+          components: Json | null
+          created_at: string
+          id: string
+          tone: string | null
+          user_id: string
+        }
+        Insert: {
+          audience?: string | null
+          category: string
+          components?: Json | null
+          created_at?: string
+          id?: string
+          tone?: string | null
+          user_id: string
+        }
+        Update: {
+          audience?: string | null
+          category?: string
+          components?: Json | null
+          created_at?: string
+          id?: string
+          tone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      prompt_snippets: {
+        Row: {
+          audience: string | null
+          category: string
+          created_at: string
+          id: string
+          snippet_text: string
+          tags: string[] | null
+          tone: string | null
+          type: string
+        }
+        Insert: {
+          audience?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          snippet_text: string
+          tags?: string[] | null
+          tone?: string | null
+          type: string
+        }
+        Update: {
+          audience?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          snippet_text?: string
+          tags?: string[] | null
+          tone?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      prompt_templates: {
+        Row: {
+          audience: string | null
+          category: string
+          created_at: string
+          id: string
+          tags: string[] | null
+          template_text: string
+          tone: string | null
+        }
+        Insert: {
+          audience?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          template_text: string
+          tone?: string | null
+        }
+        Update: {
+          audience?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          template_text?: string
+          tone?: string | null
+        }
+        Relationships: []
+      }
       prompts: {
         Row: {
           category: string

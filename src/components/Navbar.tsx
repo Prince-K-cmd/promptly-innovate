@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Menu, LogIn, User, BookOpen, LogOut, Settings } from 'lucide-react';
+import { Search, Menu, LogIn, User, BookOpen, LogOut, Settings, Wand2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +33,12 @@ const Navbar = () => {
     { name: 'Home', href: '/' },
     { name: 'Library', href: '/library' },
     { name: 'Create', href: '/create' },
+    {
+      name: "Prompt Builder",
+      href: "/builder",
+      icon: <Wand2 className="h-4 w-4" />,
+      requiresAuth: true,
+    },
   ];
 
   return (
