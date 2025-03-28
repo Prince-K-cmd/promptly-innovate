@@ -2,11 +2,19 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+interface Suggestion {
+  type: string;
+  value: string;
+  text: string;
+  snippet?: any;
+}
 
 interface PromptBuilderSuggestionsProps {
-  suggestions: any[];
-  onSuggestionClick: (suggestion: any) => void;
+  suggestions: Suggestion[];
+  onSuggestionClick: (suggestion: Suggestion) => void;
 }
 
 const PromptBuilderSuggestions: React.FC<PromptBuilderSuggestionsProps> = ({
@@ -31,6 +39,20 @@ const PromptBuilderSuggestions: React.FC<PromptBuilderSuggestionsProps> = ({
     );
   }
 
+  // Group suggestions by type
+  const groupedSuggestions = React.useMemo(() => {
+    const groups: Record<string, Suggestion[]> = {};
+    
+    suggestions.forEach(suggestion => {
+      if (!groups[suggestion.type]) {
+        groups[suggestion.type] = [];
+      }
+      groups[suggestion.type].push(suggestion);
+    });
+    
+    return groups;
+  }, [suggestions]);
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -40,18 +62,37 @@ const PromptBuilderSuggestions: React.FC<PromptBuilderSuggestionsProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {suggestions.slice(0, 5).map((suggestion, index) => (
-            <div key={index} className="text-sm">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-left h-auto py-2 px-3"
-                onClick={() => onSuggestionClick(suggestion)}
-              >
-                <span className="line-clamp-2">{suggestion.text}</span>
-              </Button>
+        <div className="space-y-4">
+          {Object.entries(groupedSuggestions).map(([type, typeSuggestions]) => (
+            <div key={type} className="space-y-2">
+              <div className="flex items-center">
+                <Badge variant="outline" className="text-xs">
+                  {type === 'category' ? 'Categories' : 
+                   type === 'tone' ? 'Tones' : 
+                   type === 'snippet' ? 'Snippets' : type}
+                </Badge>
+              </div>
+              
+              <div className="space-y-2">
+                {typeSuggestions.slice(0, 3).map((suggestion, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-left h-auto py-2 px-3 hover:bg-muted"
+                    onClick={() => onSuggestionClick(suggestion)}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                    <span className="line-clamp-2 text-sm">{suggestion.text}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           ))}
+          
+          <div className="pt-2 text-xs text-center text-muted-foreground">
+            Suggestions are personalized based on your prompt history
+          </div>
         </div>
       </CardContent>
     </Card>

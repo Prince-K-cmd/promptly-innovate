@@ -12,26 +12,12 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { usePrompts } from '@/hooks/use-prompts';
+import { useCategories } from '@/hooks/use-categories';
 import PromptCard from '@/components/PromptCard';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt } from '@/lib/supabase';
-import { Search, PlusCircle, Filter, X, Loader2 } from 'lucide-react';
-
-// List of prompt categories
-const CATEGORIES = [
-  'All',
-  'General',
-  'Creative Writing',
-  'Academic',
-  'Business',
-  'Marketing',
-  'Technical',
-  'Personal',
-  'Educational',
-  'Entertainment',
-  'Other',
-];
+import { Search, PlusCircle, Filter, X, Loader2, Settings } from 'lucide-react';
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -40,6 +26,9 @@ const LibraryPage = () => {
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Get categories
+  const { categories } = useCategories();
   
   // Get prompts based on filters
   const {
@@ -116,9 +105,31 @@ const LibraryPage = () => {
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Prompt Library</h1>
-        <Button onClick={() => navigate('/create')} className="button-hover">
-          <PlusCircle className="mr-2 h-5 w-5" />
-          Create Prompt
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/categories')}
+            className="hidden sm:flex"
+          >
+            <Settings className="mr-2 h-5 w-5" />
+            Manage Categories
+          </Button>
+          <Button onClick={() => navigate('/create')} className="button-hover">
+            <PlusCircle className="mr-2 h-5 w-5" />
+            Create Prompt
+          </Button>
+        </div>
+      </div>
+      
+      {/* Mobile categories button */}
+      <div className="sm:hidden mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/categories')}
+          className="w-full"
+        >
+          <Settings className="mr-2 h-5 w-5" />
+          Manage Categories
         </Button>
       </div>
       
@@ -139,9 +150,10 @@ const LibraryPage = () => {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              <SelectItem value="All">All Categories</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
