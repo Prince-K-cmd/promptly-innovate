@@ -3,18 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-
-export type Prompt = {
-  id: string;
-  created_at: string;
-  user_id: string;
-  title: string;
-  text: string;
-  category: string;
-  tags: string[];
-  description?: string;
-  is_public: boolean;
-};
+import { Prompt } from '@/lib/supabase';
 
 export const usePrompts = (category?: string, searchTerm?: string, tags?: string[]) => {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -109,7 +98,7 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
   };
 
   // Function to create a new prompt
-  const createPrompt = async (promptData: Omit<Prompt, 'id' | 'created_at' | 'user_id'>) => {
+  const createPrompt = async (promptData: Omit<Prompt, 'id' | 'created_at' | 'user_id' | 'updated_at'>) => {
     try {
       if (user) {
         // Create prompt in Supabase
@@ -135,9 +124,11 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
       } else {
         // Store prompt in localStorage
         const id = `local-${Date.now()}`;
+        const now = new Date().toISOString();
         const newPrompt = {
           id,
-          created_at: new Date().toISOString(),
+          created_at: now,
+          updated_at: now,
           ...promptData,
           user_id: 'local',
         };
@@ -182,26 +173,29 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         localStorage.setItem('promptiverse_prompts', JSON.stringify(updatedPrompts));
         
         // Update local state
-        setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData } : p));
+        setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData, updated_at: new Date().toISOString() } : p));
         
         toast({
           title: "Prompt updated locally",
           description: "Sign in to sync your prompts to your account.",
         });
         
-        return { id, ...promptData };
+        return { id, ...promptData, updated_at: new Date().toISOString() };
       } else {
         // Update prompt in Supabase
         const { data, error } = await supabase
           .from('prompts')
-          .update(promptData)
+          .update({
+            ...promptData,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', id)
           .select();
           
         if (error) throw error;
         
         // Update local state
-        setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData } : p));
+        setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData, updated_at: new Date().toISOString() } : p));
         
         toast({
           title: "Prompt updated",

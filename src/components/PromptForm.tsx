@@ -32,6 +32,7 @@ interface PromptFormProps {
   onSubmit: (values: any) => Promise<void>;
   initialValues?: Partial<Prompt>;
   isEdit?: boolean;
+  isPending?: boolean;
 }
 
 const formSchema = z.object({
@@ -46,7 +47,8 @@ const formSchema = z.object({
 const PromptForm: React.FC<PromptFormProps> = ({ 
   onSubmit, 
   initialValues = {}, 
-  isEdit = false 
+  isEdit = false,
+  isPending = false
 }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -276,9 +278,9 @@ const PromptForm: React.FC<PromptFormProps> = ({
           </Button>
           <Button 
             type="submit" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || isPending}
           >
-            {isSubmitting ? 'Saving...' : isEdit ? 'Update Prompt' : 'Create Prompt'}
+            {isSubmitting || isPending ? 'Saving...' : isEdit ? 'Update Prompt' : 'Create Prompt'}
           </Button>
         </div>
       </form>
