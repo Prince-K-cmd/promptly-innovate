@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -52,6 +52,9 @@ const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { updateProfile, loading: profileLoading } = useProfile();
 
+  // Font size state from localStorage
+  const storedFontSize = localStorage.getItem('promptiverse-font-size') || 'md';
+
   const notificationForm = useForm<NotificationFormValues>({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
@@ -72,9 +75,34 @@ const SettingsPage = () => {
     resolver: zodResolver(displayFormSchema),
     defaultValues: {
       theme: theme as "light" | "dark" | "system",
-      fontSize: "md",
+      fontSize: storedFontSize as "sm" | "md" | "lg" | "xl",
     },
   });
+
+  // Apply the font size class to the html element
+  useEffect(() => {
+    const fontSize = displayForm.watch("fontSize");
+    const htmlElement = document.documentElement;
+    
+    // Remove existing font size classes
+    htmlElement.classList.remove('text-sm', 'text-base', 'text-lg', 'text-xl');
+    
+    // Add the selected font size class
+    switch (fontSize) {
+      case "sm":
+        htmlElement.classList.add('text-sm');
+        break;
+      case "md":
+        htmlElement.classList.add('text-base');
+        break;
+      case "lg":
+        htmlElement.classList.add('text-lg');
+        break;
+      case "xl":
+        htmlElement.classList.add('text-xl');
+        break;
+    }
+  }, [displayForm.watch("fontSize")]);
 
   function onNotificationSubmit(data: NotificationFormValues) {
     toast({
@@ -102,6 +130,9 @@ const SettingsPage = () => {
   function onDisplaySubmit(data: DisplayFormValues) {
     const { theme, fontSize } = data;
     setTheme(theme);
+    
+    // Save font size to localStorage
+    localStorage.setItem('promptiverse-font-size', fontSize);
     
     toast({
       title: "Display settings updated",

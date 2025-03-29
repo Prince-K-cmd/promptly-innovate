@@ -15,6 +15,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/PasswordInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, UserPlus, Loader2 } from 'lucide-react';
 
@@ -107,7 +108,7 @@ const SignupPage = () => {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="Create a password" type="password" {...field} />
+                    <PasswordInput placeholder="Create a password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -121,7 +122,7 @@ const SignupPage = () => {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="Confirm your password" type="password" {...field} />
+                    <PasswordInput placeholder="Confirm your password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
