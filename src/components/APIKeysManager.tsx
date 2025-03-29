@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Key, Eye, EyeOff, Plus, Lock, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiKeys, APIKey } from '@/hooks/use-api-keys';
+import { useApiKeys, APIKey, APIKeyInput } from '@/hooks/use-api-keys';
 
 const apiKeyFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -72,12 +72,12 @@ const APIKeysManager = () => {
     
     try {
       if (editingKey) {
-        // Pass the full values object with all required fields
-        await updateApiKey(editingKey, values);
+        // Pass values as APIKeyInput with all required fields
+        await updateApiKey(editingKey, values as APIKeyInput);
         setEditingKey(null);
       } else {
         // Create new key
-        await addApiKey(values);
+        await addApiKey(values as APIKeyInput);
       }
       
       form.reset({

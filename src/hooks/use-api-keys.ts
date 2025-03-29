@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +11,9 @@ export type APIKey = {
   created_at: string;
   user_id: string;
 };
+
+export type APIKeyInput = Omit<APIKey, 'id' | 'created_at' | 'user_id'>;
+export type APIKeyUpdate = Partial<APIKeyInput>;
 
 export const useApiKeys = () => {
   const { user } = useAuth();
@@ -43,7 +45,7 @@ export const useApiKeys = () => {
     }
   };
 
-  const addApiKey = async (keyData: Omit<APIKey, 'id' | 'created_at' | 'user_id'>) => {
+  const addApiKey = async (keyData: APIKeyInput) => {
     if (!user) return null;
     
     try {
@@ -58,7 +60,6 @@ export const useApiKeys = () => {
       
       if (error) throw error;
       
-      // Update local state
       setApiKeys(prev => [...prev, data]);
       
       toast({
@@ -77,8 +78,7 @@ export const useApiKeys = () => {
     }
   };
 
-  // Update the type definition to make properties optional
-  const updateApiKey = async (id: string, keyData: Partial<Omit<APIKey, 'id' | 'created_at' | 'user_id'>>) => {
+  const updateApiKey = async (id: string, keyData: APIKeyUpdate) => {
     if (!user) return false;
     
     try {
@@ -93,7 +93,6 @@ export const useApiKeys = () => {
       
       if (error) throw error;
       
-      // Optimistically update local state
       setApiKeys(prev => prev.map(key => 
         key.id === id ? { ...key, ...keyData, updated_at: new Date().toISOString() } : key
       ));
@@ -126,7 +125,6 @@ export const useApiKeys = () => {
       
       if (error) throw error;
       
-      // Remove from local state
       setApiKeys(prev => prev.filter(key => key.id !== id));
       
       toast({

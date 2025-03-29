@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import APIKeysManager from '@/components/APIKeysManager';
-import { Settings, BellRing, Key, Palette } from 'lucide-react';
+import { Settings, BellRing, Key, Palette, Sun, Moon, Monitor } from 'lucide-react';
 
 const notificationFormSchema = z.object({
   emailNotifications: z.boolean().default(true),
@@ -47,6 +47,7 @@ type DisplayFormValues = z.infer<typeof displayFormSchema>;
 const SettingsPage = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const notificationForm = useForm<NotificationFormValues>({
     resolver: zodResolver(notificationFormSchema),
@@ -68,7 +69,7 @@ const SettingsPage = () => {
   const displayForm = useForm<DisplayFormValues>({
     resolver: zodResolver(displayFormSchema),
     defaultValues: {
-      theme: "system",
+      theme: theme as "light" | "dark" | "system",
       fontSize: "md",
     },
   });
@@ -88,6 +89,9 @@ const SettingsPage = () => {
   }
 
   function onDisplaySubmit(data: DisplayFormValues) {
+    const { theme, fontSize } = data;
+    setTheme(theme);
+    
     toast({
       title: "Display settings updated",
       description: "Your display preferences have been saved.",
@@ -304,30 +308,46 @@ const SettingsPage = () => {
                     <div className="grid gap-4">
                       <div className="space-y-2">
                         <FormLabel>Theme</FormLabel>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-3">
                           <Button
                             variant={displayForm.watch("theme") === "light" ? "default" : "outline"}
-                            onClick={() => displayForm.setValue("theme", "light")}
+                            onClick={() => {
+                              displayForm.setValue("theme", "light");
+                              setTheme("light");
+                            }}
                             type="button"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
-                            Light
+                            <Sun className="h-5 w-5" />
+                            <span>Light</span>
                           </Button>
                           <Button
                             variant={displayForm.watch("theme") === "dark" ? "default" : "outline"}
-                            onClick={() => displayForm.setValue("theme", "dark")}
+                            onClick={() => {
+                              displayForm.setValue("theme", "dark");
+                              setTheme("dark");
+                            }}
                             type="button"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
-                            Dark
+                            <Moon className="h-5 w-5" />
+                            <span>Dark</span>
                           </Button>
                           <Button
                             variant={displayForm.watch("theme") === "system" ? "default" : "outline"}
-                            onClick={() => displayForm.setValue("theme", "system")}
+                            onClick={() => {
+                              displayForm.setValue("theme", "system");
+                              setTheme("system");
+                            }}
                             type="button"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
-                            System
+                            <Monitor className="h-5 w-5" />
+                            <span>System</span>
                           </Button>
                         </div>
                       </div>
+                      
                       <div className="space-y-2">
                         <FormLabel>Font Size</FormLabel>
                         <div className="grid grid-cols-4 gap-2">
