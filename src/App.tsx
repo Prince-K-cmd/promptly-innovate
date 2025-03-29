@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { HelmetProvider } from 'react-helmet-async';
 import Layout from '@/components/Layout';
 
 // Pages
@@ -58,8 +59,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <RouterProvider router={router} />
-          <Toaster />
+          <HelmetProvider>
+            <RouterProvider router={router} />
+            <Toaster />
+          </HelmetProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
