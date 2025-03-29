@@ -45,7 +45,10 @@ export function getFallbackSuggestions(step: number): AISuggestion[] {
         { type: 'category', value: 'business', text: 'Business Communication' },
         { type: 'category', value: 'academic', text: 'Academic Research' },
         { type: 'category', value: 'coding', text: 'Programming & Development' },
-        { type: 'category', value: 'marketing', text: 'Marketing & Advertising' }
+        { type: 'category', value: 'marketing', text: 'Marketing & Advertising' },
+        { type: 'category', value: 'social_media', text: 'Social Media Content' },
+        { type: 'category', value: 'storytelling', text: 'Storytelling & Narratives' },
+        { type: 'category', value: 'educational', text: 'Educational Content' }
       ];
     case 1: // Tone selection
       return [
@@ -53,7 +56,10 @@ export function getFallbackSuggestions(step: number): AISuggestion[] {
         { type: 'tone', value: 'friendly', text: 'Friendly & Conversational' },
         { type: 'tone', value: 'authoritative', text: 'Authoritative' },
         { type: 'tone', value: 'creative', text: 'Creative & Imaginative' },
-        { type: 'tone', value: 'technical', text: 'Technical & Precise' }
+        { type: 'tone', value: 'technical', text: 'Technical & Precise' },
+        { type: 'tone', value: 'humorous', text: 'Humorous & Light-hearted' },
+        { type: 'tone', value: 'inspirational', text: 'Inspirational & Motivational' },
+        { type: 'tone', value: 'formal', text: 'Formal & Academic' }
       ];
     case 2: // Audience selection
       return [
@@ -61,7 +67,10 @@ export function getFallbackSuggestions(step: number): AISuggestion[] {
         { type: 'audience', value: 'experts', text: 'Domain Experts' },
         { type: 'audience', value: 'beginners', text: 'Beginners & Newcomers' },
         { type: 'audience', value: 'business', text: 'Business Professionals' },
-        { type: 'audience', value: 'students', text: 'Students & Academics' }
+        { type: 'audience', value: 'students', text: 'Students & Academics' },
+        { type: 'audience', value: 'developers', text: 'Software Developers' },
+        { type: 'audience', value: 'executives', text: 'Executives & Decision Makers' },
+        { type: 'audience', value: 'creative', text: 'Creative Professionals' }
       ];
     case 3: // Components/snippets
       return [
@@ -69,7 +78,10 @@ export function getFallbackSuggestions(step: number): AISuggestion[] {
         { type: 'snippet', value: 'examples', text: 'Include specific examples' },
         { type: 'snippet', value: 'constraints', text: 'Specify constraints or limitations' },
         { type: 'snippet', value: 'format', text: 'Define the desired output format' },
-        { type: 'snippet', value: 'steps', text: 'Break down into step-by-step instructions' }
+        { type: 'snippet', value: 'steps', text: 'Break down into step-by-step instructions' },
+        { type: 'snippet', value: 'resources', text: 'Suggest additional resources or references' },
+        { type: 'snippet', value: 'questions', text: 'Include follow-up questions to explore' },
+        { type: 'snippet', value: 'alternatives', text: 'Provide alternative approaches or solutions' }
       ];
     default:
       return [];

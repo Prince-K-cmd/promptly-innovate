@@ -76,10 +76,16 @@ const PromptBuilderPage = () => {
   // Track if suggestions are being generated to prevent duplicate calls
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
 
-  // Generate suggestions when form data changes
+  // Generate suggestions when form data changes or when step changes
   useEffect(() => {
-    // Only fetch suggestions if we're authenticated and have filled out some form data
-    if (!isAuthenticated || !debouncedFormData.category || isFetchingSuggestions || isGenerating) {
+    // Only fetch suggestions if we're authenticated
+    if (!isAuthenticated || isFetchingSuggestions || isGenerating) {
+      return;
+    }
+
+    // For step 0, we don't need any form data
+    // For other steps, we need at least the category
+    if (currentStep > 0 && !debouncedFormData.category) {
       return;
     }
 
@@ -89,6 +95,7 @@ const PromptBuilderPage = () => {
     const fetchSuggestions = async () => {
       try {
         setIsFetchingSuggestions(true);
+        console.log(`Fetching suggestions for step ${currentStep}`);
 
         const results = await generateSuggestions({
           ...debouncedFormData,
@@ -97,6 +104,7 @@ const PromptBuilderPage = () => {
 
         // Only update state if the component is still mounted and this is the latest request
         if (!isCancelled) {
+          console.log(`Setting suggestions for step ${currentStep}:`, results);
           setSuggestions(results);
         }
       } catch (error) {
@@ -337,6 +345,10 @@ const PromptBuilderPage = () => {
     }
 
     if (currentStep < 3) {
+      // Clear current suggestions before changing step
+      setSuggestions([]);
+
+      // Update step
       setCurrentStep(currentStep + 1);
 
       // Generate prompt at the preview step
@@ -349,6 +361,10 @@ const PromptBuilderPage = () => {
   // Previous step
   const handlePrevStep = () => {
     if (currentStep > 0) {
+      // Clear current suggestions before changing step
+      setSuggestions([]);
+
+      // Update step
       setCurrentStep(currentStep - 1);
     }
   };

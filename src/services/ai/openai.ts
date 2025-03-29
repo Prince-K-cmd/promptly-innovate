@@ -118,7 +118,7 @@ export class OpenAIService implements AIService {
   private createPromptForGeneration(request: AIPromptRequest): string {
     const { category, tone, audience, goal, components } = request;
 
-    let prompt = 'Generate a high-quality prompt based on the following requirements:\n\n';
+    let prompt = 'Generate a prompt based on these requirements. Your response should ONLY include the prompt text itself with no additional explanations, introductions, or formatting:\n\n';
 
     if (category) prompt += `Category: ${category}\n`;
     if (tone) prompt += `Tone: ${tone}\n`;
@@ -132,7 +132,7 @@ export class OpenAIService implements AIService {
       });
     }
 
-    prompt += '\nCreate a well-structured, detailed prompt that incorporates all these elements. The prompt should be ready to use with AI systems.';
+    prompt += '\nIMPORTANT: Do NOT include phrases like "Here is a prompt" or "Based on your requirements". Start directly with the prompt content. Do NOT add any explanatory text before or after the prompt.';
 
     return prompt;
   }
