@@ -153,7 +153,7 @@ export class GeminiService implements AIService {
 
     const { category, tone, audience, goal, components } = request;
 
-    let prompt = 'Generate a prompt based on these requirements. Your response should ONLY include the prompt text itself with no additional explanations, introductions, or formatting:\n\n';
+    let prompt = 'Generate a concise but informative prompt based on these requirements. The prompt should be direct and contain enough context without being overly verbose. Your response should ONLY include the prompt text itself with no additional explanations, introductions, or formatting:\n\n';
 
     if (category) prompt += `Category: ${category}\n`;
     if (tone) prompt += `Tone: ${tone}\n`;
@@ -167,6 +167,11 @@ export class GeminiService implements AIService {
       });
     }
 
+    prompt += '\nGuidelines:\n';
+    prompt += '1. Be concise but include all necessary information\n';
+    prompt += '2. Include shot prompting (examples) ONLY when it adds significant value\n';
+    prompt += '3. For technical or complex tasks, include brief step-by-step instructions\n';
+    prompt += '4. Adapt detail level to the complexity of the task - simpler tasks need less detail\n';
     prompt += '\nIMPORTANT: Do NOT include phrases like "Here is a prompt" or "Based on your requirements". Start directly with the prompt content. Do NOT add any explanatory text before or after the prompt.';
 
     return prompt;
