@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,13 +24,14 @@ export const useApiKeys = () => {
     
     setLoading(true);
     try {
-      // For demo purposes, we'll check localStorage
-      const storedKeys = localStorage.getItem(`api_keys_${user.id}`);
-      if (storedKeys) {
-        setApiKeys(JSON.parse(storedKeys));
-      } else {
-        setApiKeys([]);
-      }
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setApiKeys(data || []);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -45,24 +47,26 @@ export const useApiKeys = () => {
     if (!user) return null;
     
     try {
-      // Store in localStorage
-      const newKey: APIKey = {
-        id: `key_${Date.now().toString(36)}`,
-        ...keyData,
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-      };
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert({
+          ...keyData,
+          user_id: user.id,
+        })
+        .select()
+        .single();
       
-      const updatedKeys = [...apiKeys, newKey];
-      localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-      setApiKeys(updatedKeys);
+      if (error) throw error;
+      
+      // Update local state
+      setApiKeys(prev => [...prev, data]);
       
       toast({
         title: "API key added",
         description: "Your new API key has been saved",
       });
       
-      return newKey;
+      return data;
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -77,13 +81,21 @@ export const useApiKeys = () => {
     if (!user) return false;
     
     try {
-      // Update in localStorage
-      const updatedKeys = apiKeys.map(key => 
-        key.id === id ? { ...key, ...keyData } : key
-      );
+      const { error } = await supabase
+        .from('api_keys')
+        .update({
+          ...keyData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
       
-      localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-      setApiKeys(updatedKeys);
+      if (error) throw error;
+      
+      // Optimistically update local state
+      setApiKeys(prev => prev.map(key => 
+        key.id === id ? { ...key, ...keyData, updated_at: new Date().toISOString() } : key
+      ));
       
       toast({
         title: "API key updated",
@@ -105,10 +117,16 @@ export const useApiKeys = () => {
     if (!user) return false;
     
     try {
-      // Delete from localStorage
-      const updatedKeys = apiKeys.filter(key => key.id !== id);
-      localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-      setApiKeys(updatedKeys);
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Remove from local state
+      setApiKeys(prev => prev.filter(key => key.id !== id));
       
       toast({
         title: "API key deleted",
@@ -127,10 +145,7 @@ export const useApiKeys = () => {
   };
 
   const getApiKeyByProvider = (provider: string): APIKey | null => {
-    if (!apiKeys.length) return null;
-    
-    const key = apiKeys.find(k => k.provider === provider);
-    return key || null;
+    return apiKeys.find(k => k.provider === provider) || null;
   };
 
   useEffect(() => {
