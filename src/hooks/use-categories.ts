@@ -1,6 +1,5 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Category } from '@/lib/supabase';
 
@@ -77,7 +76,7 @@ export function useCategories() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: `Failed to add category: ${error.message}`,
+        description: `Failed to add category: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     },
   });
@@ -106,7 +105,7 @@ export function useCategories() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: `Failed to update category: ${error.message}`,
+        description: `Failed to update category: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     },
   });
@@ -138,7 +137,7 @@ export function useCategories() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: `Failed to delete category: ${error.message}`,
+        description: `Failed to delete category: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     },
   });
@@ -147,9 +146,9 @@ export function useCategories() {
     categories,
     isLoading,
     error,
-    addCategory: (category: Omit<Category, 'id'>) => addCategory.mutateAsync(category),
+    addCategory: (category: Omit<Category, 'id'>) => addCategory.mutateAsync(category).then(() => {}),
     updateCategory: (id: string, updates: Partial<Category>) => 
-      updateCategory.mutateAsync({ id, updates }),
-    deleteCategory: (id: string) => deleteCategory.mutateAsync(id),
+      updateCategory.mutateAsync({ id, updates }).then(() => {}),
+    deleteCategory: (id: string) => deleteCategory.mutateAsync(id).then(() => {}),
   };
 }
