@@ -1,15 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'; // Changed imports
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Library, RefreshCw } from 'lucide-react';
 
@@ -26,21 +23,23 @@ const SavePromptDialog: React.FC<SavePromptDialogProps> = ({
   onGoToLibrary,
   onStartNewPrompt,
 }) => {
+  const titleId = React.useId(); // Generate a unique ID for the title
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}> {/* Changed AlertDialog to Dialog */}
+      <DialogContent className="max-w-md" aria-labelledby={titleId}> {/* Added aria-labelledby */}
+        <DialogHeader> {/* Changed AlertDialogHeader to DialogHeader */}
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
-          <AlertDialogTitle className="text-center text-xl mt-4">
+          <DialogTitle id={titleId} className="text-center text-xl mt-4"> {/* Added id */}
             Prompt Saved Successfully!
-          </AlertDialogTitle>
-          <AlertDialogDescription className="text-center">
+          </DialogTitle>
+          <DialogDescription className="text-center"> {/* Changed AlertDialogDescription to DialogDescription */}
             Your prompt has been saved to your library. What would you like to do next?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2"> {/* Changed AlertDialogFooter to DialogFooter */}
           <Button
             variant="outline"
             className="flex items-center justify-center gap-2 w-full"
@@ -56,9 +55,9 @@ const SavePromptDialog: React.FC<SavePromptDialogProps> = ({
             <Library className="h-4 w-4" />
             Go to Library
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog> // Changed AlertDialog to Dialog
   );
 };
 

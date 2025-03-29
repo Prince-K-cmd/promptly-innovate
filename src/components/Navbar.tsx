@@ -17,18 +17,13 @@ import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const location = useLocation();
-  
-  // Using a try-catch to handle potential auth context missing
-  let auth = { user: null, profile: null, signOut: async () => {}, isAuthenticated: false };
-  try {
-    auth = useAuth();
-  } catch (error) {
-    console.error("Auth context not available:", error);
-    // Continue with default auth values
-  }
-  
-  const { user, profile, signOut, isAuthenticated } = auth;
-  
+  const auth = useAuth(); // Hook called unconditionally at the top
+
+  // Explicitly define variables with defaults if auth context is not available
+  const isAuthenticated = auth?.isAuthenticated ?? false;
+  const profile = auth?.profile ?? null;
+  const signOut = auth?.signOut ?? (() => { console.error("SignOut function not available"); return Promise.resolve(); });
+
   // Get user initials for avatar fallback
   const getInitials = () => {
     if (profile?.full_name) {
