@@ -16,6 +16,7 @@ import SeoComponent from '@/components/SEO';
 import PromptBuilderStepper from '@/components/PromptBuilderStepper';
 import PromptBuilderPreview from '@/components/PromptBuilderPreview';
 import PromptBuilderSuggestions from '@/components/PromptBuilderSuggestions';
+import SavePromptDialog from '@/components/SavePromptDialog';
 import LoginPrompt from '@/components/LoginPrompt';
 
 const defaultFormData: PromptBuilderFormData = {
@@ -75,6 +76,7 @@ const PromptBuilderPage = () => {
   const [activeProvider, setActiveProvider] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   const debouncedFormData = useDebounce(formData, 500);
 
@@ -426,6 +428,18 @@ const PromptBuilderPage = () => {
     });
   };
 
+  // Handle going to library after saving prompt
+  const handleGoToLibrary = () => {
+    setShowSaveDialog(false);
+    navigate('/library');
+  };
+
+  // Handle starting a new prompt after saving
+  const handleStartNewPrompt = () => {
+    setShowSaveDialog(false);
+    resetPromptBuilder();
+  };
+
   // Save as prompt
   const saveAsPrompt = async () => {
     if (!isAuthenticated) {
@@ -449,16 +463,8 @@ const PromptBuilderPage = () => {
         description: "Your custom prompt has been saved to your library",
       });
 
-      // Show a dialog asking if the user wants to start a new prompt or go to library
-      const goToLibrary = window.confirm("Prompt saved successfully! Would you like to go to your library? Click 'OK' to go to library or 'Cancel' to start a new prompt.");
-
-      if (goToLibrary) {
-        // Navigate to library
-        navigate('/library');
-      } else {
-        // Reset the prompt builder to start fresh
-        resetPromptBuilder();
-      }
+      // Show the custom save dialog
+      setShowSaveDialog(true);
     } catch (error) {
       console.error('Error saving prompt:', error);
       toast({
@@ -586,6 +592,14 @@ const PromptBuilderPage = () => {
         description="Build custom prompts with AI-powered personalized suggestions"
       />
 
+      {/* Custom Save Dialog */}
+      <SavePromptDialog
+        open={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        onGoToLibrary={handleGoToLibrary}
+        onStartNewPrompt={handleStartNewPrompt}
+      />
+
       {/* Always show the header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold gradient-text mb-2">Interactive Prompt Builder</h1>
@@ -598,7 +612,6 @@ const PromptBuilderPage = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card className="p-6">
@@ -677,7 +690,6 @@ const PromptBuilderPage = () => {
               />
             </div>
           </div>
-        </>
       )}
     </div>
   );
