@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Key, Eye, EyeOff, Plus, Lock, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useApiKeys, APIKey } from '@/hooks/use-api-keys';
 
 const apiKeyFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -20,21 +20,12 @@ const apiKeyFormSchema = z.object({
   key: z.string().min(1, "API key is required"),
 });
 
-type APIKey = {
-  id: string;
-  name: string;
-  provider: string;
-  key: string;
-  created_at: string;
-};
-
 type APIKeyFormValues = z.infer<typeof apiKeyFormSchema>;
 
 const APIKeysManager = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { apiKeys, loading, addApiKey, updateApiKey, deleteApiKey } = useApiKeys();
   const [showingKeys, setShowingKeys] = useState<Record<string, boolean>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
 
@@ -46,42 +37,6 @@ const APIKeysManager = () => {
       key: "",
     },
   });
-
-  React.useEffect(() => {
-    if (user) {
-      loadApiKeys();
-    }
-  }, [user]);
-
-  const loadApiKeys = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      // Try to load API keys from localStorage first (for demo purposes)
-      const storedKeys = localStorage.getItem(`api_keys_${user.id}`);
-      if (storedKeys) {
-        setApiKeys(JSON.parse(storedKeys));
-      } else {
-        // In a real app, you would fetch from Supabase
-        const { data, error } = await supabase
-          .from('api_keys')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (error) throw error;
-        if (data) setApiKeys(data);
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Failed to load API keys",
-        description: error.message || "An unexpected error occurred",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const toggleKeyVisibility = (id: string) => {
     setShowingKeys(prev => ({
@@ -109,34 +64,7 @@ const APIKeysManager = () => {
   };
 
   const handleDeleteKey = async (id: string) => {
-    if (!user) return;
-    
-    try {
-      // For demo purposes, we'll just update localStorage
-      const updatedKeys = apiKeys.filter(key => key.id !== id);
-      localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-      setApiKeys(updatedKeys);
-      
-      // In a real app, you would delete from Supabase
-      // const { error } = await supabase
-      //   .from('api_keys')
-      //   .delete()
-      //   .eq('id', id)
-      //   .eq('user_id', user.id);
-      
-      // if (error) throw error;
-      
-      toast({
-        title: "API key deleted",
-        description: "The API key has been removed successfully",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Failed to delete API key",
-        description: error.message || "An unexpected error occurred",
-      });
-    }
+    await deleteApiKey(id);
   };
 
   const onSubmit = async (values: APIKeyFormValues) => {
@@ -145,60 +73,11 @@ const APIKeysManager = () => {
     try {
       if (editingKey) {
         // Update existing key
-        const updatedKeys = apiKeys.map(key => 
-          key.id === editingKey 
-            ? { ...key, ...values, key: values.key } 
-            : key
-        );
-        
-        localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-        setApiKeys(updatedKeys);
-        
-        // In a real app, you would update in Supabase
-        // const { error } = await supabase
-        //   .from('api_keys')
-        //   .update({ name: values.name, provider: values.provider, key: values.key })
-        //   .eq('id', editingKey)
-        //   .eq('user_id', user.id);
-        
-        // if (error) throw error;
-        
-        toast({
-          title: "API key updated",
-          description: "Your API key has been updated successfully",
-        });
-        
+        await updateApiKey(editingKey, values);
         setEditingKey(null);
       } else {
         // Create new key
-        const newKey: APIKey = {
-          id: `key_${Date.now().toString(36)}`,
-          name: values.name,
-          provider: values.provider,
-          key: values.key,
-          created_at: new Date().toISOString(),
-        };
-        
-        const updatedKeys = [...apiKeys, newKey];
-        localStorage.setItem(`api_keys_${user.id}`, JSON.stringify(updatedKeys));
-        setApiKeys(updatedKeys);
-        
-        // In a real app, you would insert into Supabase
-        // const { error } = await supabase
-        //   .from('api_keys')
-        //   .insert({
-        //     name: values.name,
-        //     provider: values.provider,
-        //     key: values.key,
-        //     user_id: user.id,
-        //   });
-        
-        // if (error) throw error;
-        
-        toast({
-          title: "API key added",
-          description: "Your new API key has been saved",
-        });
+        await addApiKey(values);
       }
       
       form.reset({
