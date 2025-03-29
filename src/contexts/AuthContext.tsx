@@ -15,6 +15,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
 };
 
+// Create context with default values
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -25,22 +26,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // First, set up the auth state listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Initialize authListener first to avoid race conditions
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state changed:", event, currentSession?.user?.id);
       
-      if (session?.user) {
-        // Fetch user profile on auth change with setTimeout to prevent deadlocks
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      // If user is available, fetch profile data
+      if (currentSession?.user) {
+        // Use setTimeout to prevent potential deadlocks
         setTimeout(async () => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profileData) {
-            setProfile(profileData);
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .single();
+              
+            if (profileData) {
+              setProfile(profileData);
+            }
+          } catch (error) {
+            console.error("Error fetching profile:", error);
           }
         }, 0);
       } else {
@@ -52,29 +60,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Then, check for an existing session
     const getSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (!error && data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      try {
+        const { data, error } = await supabase.auth.getSession();
         
-        // Fetch user profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.session.user.id)
-          .single();
+        if (!error && data.session) {
+          console.log("Existing session found:", data.session.user.id);
+          setSession(data.session);
+          setUser(data.session.user);
           
-        if (profileData) {
-          setProfile(profileData);
+          // Fetch user profile
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+            
+          if (profileData) {
+            setProfile(profileData);
+          }
         }
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getSession();
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -184,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAuthenticated: !!user,
   };
 
+  console.log("AuthProvider rendering with user:", user?.id);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

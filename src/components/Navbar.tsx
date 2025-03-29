@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,8 +16,18 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 const Navbar = () => {
-  const { user, profile, signOut, isAuthenticated } = useAuth();
   const location = useLocation();
+  
+  // Using a try-catch to handle potential auth context missing
+  let auth = { user: null, profile: null, signOut: async () => {}, isAuthenticated: false };
+  try {
+    auth = useAuth();
+  } catch (error) {
+    console.error("Auth context not available:", error);
+    // Continue with default auth values
+  }
+  
+  const { user, profile, signOut, isAuthenticated } = auth;
   
   // Get user initials for avatar fallback
   const getInitials = () => {
