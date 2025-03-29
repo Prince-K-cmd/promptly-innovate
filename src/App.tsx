@@ -1,10 +1,11 @@
 
 import { useState } from 'react';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter, Route, Routes, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Layout from '@/components/Layout';
 
 // Pages
 import Index from '@/pages/Index';
@@ -32,18 +33,24 @@ const queryClient = new QueryClient({
 });
 
 const router = createBrowserRouter([
-  { path: "*", element: <Index /> },
-  { path: "/", element: <HomePage /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/signup", element: <SignupPage /> },
-  { path: "/profile", element: <ProfilePage /> },
-  { path: "/settings", element: <SettingsPage /> },
-  { path: "/search", element: <SearchPage /> },
-  { path: "/library", element: <LibraryPage /> },
-  { path: "/create", element: <CreatePromptPage /> },
-  { path: "/builder", element: <PromptBuilderPage /> },
-  { path: "/categories", element: <CategoryManagementPage /> },
-  { path: "/not-found", element: <NotFoundPage /> },
+  {
+    path: "/",
+    element: <Index />,
+    children: [
+      { path: "", element: <HomePage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "signup", element: <SignupPage /> },
+      { path: "profile", element: <ProfilePage /> },
+      { path: "settings", element: <SettingsPage /> },
+      { path: "search", element: <SearchPage /> },
+      { path: "library", element: <LibraryPage /> },
+      { path: "create", element: <CreatePromptPage /> },
+      { path: "builder", element: <PromptBuilderPage /> },
+      { path: "categories", element: <CategoryManagementPage /> },
+      { path: "not-found", element: <NotFoundPage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
 ]);
 
 function App() {

@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
+import APIKeysManager from '@/components/APIKeysManager';
+import { Settings, BellRing, Key, Palette } from 'lucide-react';
 
 const notificationFormSchema = z.object({
   emailNotifications: z.boolean().default(true),
@@ -121,11 +123,25 @@ const SettingsPage = () => {
         </div>
         <Separator />
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid w-full md:w-auto grid-cols-3">
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="display">Display</TabsTrigger>
+          <TabsList className="grid w-full md:w-auto grid-cols-4">
+            <TabsTrigger value="account" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>Account</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <BellRing className="h-4 w-4" />
+              <span>Notifications</span>
+            </TabsTrigger>
+            <TabsTrigger value="api-keys" className="flex items-center gap-2">
+              <Key className="h-4 w-4" />
+              <span>API Keys</span>
+            </TabsTrigger>
+            <TabsTrigger value="display" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              <span>Display</span>
+            </TabsTrigger>
           </TabsList>
+          
           <TabsContent value="account" className="space-y-6">
             <Card>
               <CardHeader>
@@ -191,6 +207,7 @@ const SettingsPage = () => {
               </CardFooter>
             </Card>
           </TabsContent>
+          
           <TabsContent value="notifications" className="space-y-6">
             <Card>
               <CardHeader>
@@ -268,6 +285,11 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          
+          <TabsContent value="api-keys" className="space-y-6">
+            <APIKeysManager />
+          </TabsContent>
+          
           <TabsContent value="display" className="space-y-6">
             <Card>
               <CardHeader>
