@@ -25,6 +25,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // First, set up the auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Fetch user profile on auth change with setTimeout to prevent deadlocks
+        setTimeout(async () => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileData) {
+            setProfile(profileData);
+          }
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+      
+      setLoading(false);
+    });
+
+    // Then, check for an existing session
     const getSession = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (!error && data.session) {
@@ -46,28 +72,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     getSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Fetch user profile on auth change
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileData) {
-          setProfile(profileData);
-        }
-      } else {
-        setProfile(null);
-      }
-      
-      setLoading(false);
-    });
 
     return () => {
       authListener?.subscription.unsubscribe();
