@@ -72,7 +72,7 @@ const APIKeysManager = () => {
     
     try {
       if (editingKey) {
-        // Update existing key
+        // Pass the full values object with all required fields
         await updateApiKey(editingKey, values);
         setEditingKey(null);
       } else {

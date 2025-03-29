@@ -77,7 +77,8 @@ export const useApiKeys = () => {
     }
   };
 
-  const updateApiKey = async (id: string, keyData: Partial<Omit<APIKey, 'id' | 'user_id'>>) => {
+  // Update the type definition to make properties optional
+  const updateApiKey = async (id: string, keyData: Partial<Omit<APIKey, 'id' | 'created_at' | 'user_id'>>) => {
     if (!user) return false;
     
     try {
