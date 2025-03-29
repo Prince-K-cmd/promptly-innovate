@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useDebounce } from '@/lib/performance';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
+import { RefreshCw } from 'lucide-react';
 import SeoComponent from '@/components/SEO';
 import PromptBuilderStepper from '@/components/PromptBuilderStepper';
 import PromptBuilderPreview from '@/components/PromptBuilderPreview';
@@ -395,6 +396,36 @@ const PromptBuilderPage = () => {
     }
   };
 
+  // Reset the prompt builder to start fresh
+  const resetPromptBuilder = () => {
+    // Clear form data
+    setFormData(defaultFormData);
+
+    // Reset step to beginning
+    setCurrentStep(0);
+
+    // Clear generated prompt
+    setGeneratedPrompt('');
+
+    // Clear suggestions
+    setSuggestions([]);
+
+    // Clear localStorage
+    try {
+      localStorage.removeItem('promptBuilderFormData');
+      localStorage.removeItem('promptBuilderStep');
+      localStorage.removeItem('promptBuilderGeneratedPrompt');
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
+
+    // Show success message
+    toast({
+      title: "Started new prompt",
+      description: "You can now create a fresh prompt",
+    });
+  };
+
   // Save as prompt
   const saveAsPrompt = async () => {
     if (!isAuthenticated) {
@@ -418,8 +449,16 @@ const PromptBuilderPage = () => {
         description: "Your custom prompt has been saved to your library",
       });
 
-      // Navigate to library
-      navigate('/library');
+      // Show a dialog asking if the user wants to start a new prompt or go to library
+      const goToLibrary = window.confirm("Prompt saved successfully! Would you like to go to your library? Click 'OK' to go to library or 'Cancel' to start a new prompt.");
+
+      if (goToLibrary) {
+        // Navigate to library
+        navigate('/library');
+      } else {
+        // Reset the prompt builder to start fresh
+        resetPromptBuilder();
+      }
     } catch (error) {
       console.error('Error saving prompt:', error);
       toast({
@@ -570,8 +609,24 @@ const PromptBuilderPage = () => {
                   generatedPrompt={generatedPrompt}
                 />
 
-                <div className="flex justify-between mt-6">
-                  <Button
+                <div className="flex flex-col space-y-4 mt-6">
+                  {/* New Prompt Button - Only show on final step */}
+                  {currentStep === 3 && (
+                    <div className="flex justify-center w-full">
+                      <Button
+                        variant="secondary"
+                        onClick={resetPromptBuilder}
+                        className="w-full md:w-auto flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Start New Prompt
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Navigation Buttons */}
+                  <div className="flex justify-between">
+                    <Button
                     variant="outline"
                     onClick={handlePrevStep}
                     disabled={currentStep === 0}
@@ -602,6 +657,7 @@ const PromptBuilderPage = () => {
                         Next
                       </Button>
                     )}
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -51,7 +51,14 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
 
   // Handle testing the prompt with AI
   const handleTestPrompt = async () => {
-    if (!selectedProvider || !sampleInput || !generatedPrompt) return;
+    if (!selectedProvider || !sampleInput || !generatedPrompt) {
+      toast({
+        variant: "warning",
+        title: "Missing information",
+        description: "Please select an AI provider, enter sample input, and generate a prompt first.",
+      });
+      return;
+    }
 
     setIsTestingPrompt(true);
     setAiOutput('');
@@ -84,6 +91,11 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
     } catch (error) {
       console.error('Error testing prompt:', error);
       setAiOutput('Error generating response. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Error testing prompt",
+        description: "There was an error testing your prompt. Please try again.",
+      });
     } finally {
       setIsTestingPrompt(false);
     }
