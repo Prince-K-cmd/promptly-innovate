@@ -77,29 +77,28 @@ export const useTheme = () => {
   return context;
 };
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className={`h-9 w-9 ${className}`}>
-          {theme === "light" && <Sun className="h-[1.2rem] w-[1.2rem]" />}
-          {theme === "dark" && <Moon className="h-[1.2rem] w-[1.2rem]" />}
-          {theme === "system" && <Monitor className="h-[1.2rem] w-[1.2rem]" />}
-          <span className="sr-only">Toggle theme</span>
+        <Button variant="outline" size="icon" className="h-8 w-8">
+          {theme === "light" && <Sun className="h-4 w-4" />}
+          {theme === "dark" && <Moon className="h-4 w-4" />}
+          {theme === "system" && <Monitor className="h-4 w-4" />}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
-        <DropdownMenuItem onClick={() => setTheme("light")} className="flex items-center gap-2 cursor-pointer">
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme("light")} className="flex items-center gap-2">
           <Sun className="h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")} className="flex items-center gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => setTheme("dark")} className="flex items-center gap-2">
           <Moon className="h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")} className="flex items-center gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => setTheme("system")} className="flex items-center gap-2">
           <Monitor className="h-4 w-4" />
           <span>System</span>
         </DropdownMenuItem>
@@ -114,18 +113,15 @@ export function ThemeToggleGroup() {
   return (
     <ToggleGroup type="single" value={theme} onValueChange={(value) => {
       if (value) setTheme(value as Theme);
-    }} className="flex md:flex-row flex-col">
-      <ToggleGroupItem value="light" aria-label="Light mode" title="Light mode" className="flex items-center gap-2">
+    }}>
+      <ToggleGroupItem value="light" aria-label="Light mode" title="Light mode">
         <Sun className="h-4 w-4" />
-        <span className="hidden md:inline">Light</span>
       </ToggleGroupItem>
-      <ToggleGroupItem value="dark" aria-label="Dark mode" title="Dark mode" className="flex items-center gap-2">
+      <ToggleGroupItem value="dark" aria-label="Dark mode" title="Dark mode">
         <Moon className="h-4 w-4" />
-        <span className="hidden md:inline">Dark</span>
       </ToggleGroupItem>
-      <ToggleGroupItem value="system" aria-label="System theme" title="System theme" className="flex items-center gap-2">
+      <ToggleGroupItem value="system" aria-label="System theme" title="System theme">
         <Monitor className="h-4 w-4" />
-        <span className="hidden md:inline">System</span>
       </ToggleGroupItem>
     </ToggleGroup>
   );

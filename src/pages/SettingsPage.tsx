@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,11 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import APIKeysManager from '@/components/APIKeysManager';
-import PasswordUpdateForm from '@/components/PasswordUpdateForm';
-import EmailUpdateForm from '@/components/EmailUpdateForm';
-import { Settings, BellRing, Key, Palette, Sun, Moon, Monitor, UserIcon, Lock, Mail } from 'lucide-react';
-import { useProfile } from '@/hooks/use-profile';
-import { supabase } from '@/integrations/supabase/client';
+import { Settings, BellRing, Key, Palette, Sun, Moon, Monitor } from 'lucide-react';
 
 const notificationFormSchema = z.object({
   emailNotifications: z.boolean().default(true),
@@ -35,6 +30,9 @@ const accountFormSchema = z.object({
     .max(30, {
       message: "Username must not be longer than 30 characters.",
     }),
+  email: z
+    .string()
+    .email({ message: "Please enter a valid email address." }),
 });
 
 const displayFormSchema = z.object({
@@ -50,7 +48,6 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { updateProfile, loading: profileLoading } = useProfile();
 
   const notificationForm = useForm<NotificationFormValues>({
     resolver: zodResolver(notificationFormSchema),
@@ -65,6 +62,7 @@ const SettingsPage = () => {
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
       username: profile?.username || '',
+      email: user?.email || '',
     },
   });
 
@@ -83,20 +81,11 @@ const SettingsPage = () => {
     });
   }
 
-  async function onAccountSubmit(data: AccountFormValues) {
-    try {
-      await updateProfile({ username: data.username });
-      toast({
-        title: "Account settings updated",
-        description: "Your account information has been updated.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Failed to update account",
-        description: error.message || "An error occurred",
-      });
-    }
+  function onAccountSubmit(data: AccountFormValues) {
+    toast({
+      title: "Account settings updated",
+      description: "Your account information has been updated.",
+    });
   }
 
   function onDisplaySubmit(data: DisplayFormValues) {
@@ -128,40 +117,32 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="container py-6 md:py-10 px-4 md:px-6">
+    <div className="container py-10">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
             Manage your account settings and preferences.
           </p>
         </div>
         <Separator />
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="grid w-full md:grid-cols-6 grid-cols-3 gap-2">
+          <TabsList className="grid w-full md:w-auto grid-cols-4">
             <TabsTrigger value="account" className="flex items-center gap-2">
-              <UserIcon className="h-4 w-4" />
-              <span className="hidden md:inline">Account</span>
-            </TabsTrigger>
-            <TabsTrigger value="password" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              <span className="hidden md:inline">Password</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span className="hidden md:inline">Email</span>
+              <Settings className="h-4 w-4" />
+              <span>Account</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <BellRing className="h-4 w-4" />
-              <span className="hidden md:inline">Notifications</span>
+              <span>Notifications</span>
             </TabsTrigger>
             <TabsTrigger value="api-keys" className="flex items-center gap-2">
               <Key className="h-4 w-4" />
-              <span className="hidden md:inline">API Keys</span>
+              <span>API Keys</span>
             </TabsTrigger>
             <TabsTrigger value="display" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              <span className="hidden md:inline">Display</span>
+              <span>Display</span>
             </TabsTrigger>
           </TabsList>
           
@@ -192,11 +173,23 @@ const SettingsPage = () => {
                         </FormItem>
                       )}
                     />
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button type="submit" disabled={profileLoading}>
-                        {profileLoading ? "Saving..." : "Save Changes"}
-                      </Button>
-                    </div>
+                    <FormField
+                      control={accountForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your email" {...field} disabled />
+                          </FormControl>
+                          <FormDescription>
+                            This is your email address. Changes to email require verification.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit">Save Changes</Button>
                   </form>
                 </Form>
               </CardContent>
@@ -216,34 +209,6 @@ const SettingsPage = () => {
               <CardFooter>
                 <Button variant="destructive">Delete Account</Button>
               </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="password" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Update Password</CardTitle>
-                <CardDescription>
-                  Change your password to keep your account secure.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PasswordUpdateForm />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="email" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Update Email Address</CardTitle>
-                <CardDescription>
-                  Change the email address associated with your account.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EmailUpdateForm />
-              </CardContent>
             </Card>
           </TabsContent>
           
@@ -340,42 +305,42 @@ const SettingsPage = () => {
               <CardContent>
                 <Form {...displayForm}>
                   <form onSubmit={displayForm.handleSubmit(onDisplaySubmit)} className="space-y-4">
-                    <div className="grid gap-6">
+                    <div className="grid gap-4">
                       <div className="space-y-2">
                         <FormLabel>Theme</FormLabel>
                         <div className="grid grid-cols-3 gap-3">
                           <Button
-                            variant={theme === "light" ? "default" : "outline"}
+                            variant={displayForm.watch("theme") === "light" ? "default" : "outline"}
                             onClick={() => {
                               displayForm.setValue("theme", "light");
                               setTheme("light");
                             }}
                             type="button"
-                            className="flex flex-col items-center justify-center gap-2 p-4 h-auto"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
                             <Sun className="h-5 w-5" />
                             <span>Light</span>
                           </Button>
                           <Button
-                            variant={theme === "dark" ? "default" : "outline"}
+                            variant={displayForm.watch("theme") === "dark" ? "default" : "outline"}
                             onClick={() => {
                               displayForm.setValue("theme", "dark");
                               setTheme("dark");
                             }}
                             type="button"
-                            className="flex flex-col items-center justify-center gap-2 p-4 h-auto"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
                             <Moon className="h-5 w-5" />
                             <span>Dark</span>
                           </Button>
                           <Button
-                            variant={theme === "system" ? "default" : "outline"}
+                            variant={displayForm.watch("theme") === "system" ? "default" : "outline"}
                             onClick={() => {
                               displayForm.setValue("theme", "system");
                               setTheme("system");
                             }}
                             type="button"
-                            className="flex flex-col items-center justify-center gap-2 p-4 h-auto"
+                            className="flex items-center justify-center gap-2 p-4 h-auto"
                           >
                             <Monitor className="h-5 w-5" />
                             <span>System</span>
@@ -385,7 +350,7 @@ const SettingsPage = () => {
                       
                       <div className="space-y-2">
                         <FormLabel>Font Size</FormLabel>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                           <Button
                             variant={displayForm.watch("fontSize") === "sm" ? "default" : "outline"}
                             onClick={() => displayForm.setValue("fontSize", "sm")}
