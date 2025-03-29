@@ -57,10 +57,18 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
     setAiOutput('');
 
     try {
-      // Call the AI service with the prompt and sample input
+      console.log('Testing prompt with:', selectedProvider);
+      console.log('Prompt:', generatedPrompt);
+      console.log('Sample input:', sampleInput);
+
+      // Create a combined prompt with the generated prompt and sample input
+      const combinedPrompt = `${generatedPrompt}\n\nInput: ${sampleInput}`;
+
+      // Call the AI service with the combined prompt
       const result = await generateWithProvider(
         selectedProvider,
         {
+          prompt: combinedPrompt,
           category: formData.category,
           tone: formData.tone,
           audience: formData.audience,
@@ -68,9 +76,10 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
           components: formData.components,
           step: currentStep
         },
-        'prompt'
+        'test'
       ) as string;
 
+      console.log('AI response:', result);
       setAiOutput(result);
     } catch (error) {
       console.error('Error testing prompt:', error);

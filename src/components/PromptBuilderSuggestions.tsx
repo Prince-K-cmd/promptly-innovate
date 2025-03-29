@@ -135,7 +135,7 @@ const PromptBuilderSuggestions: React.FC<PromptBuilderSuggestionsProps> = ({
               </div>
 
               <div className="space-y-2">
-                {typeSuggestions.slice(0, 3).map((suggestion) => (
+                {typeSuggestions.slice(0, 5).map((suggestion) => (
                   <Button
                     key={`${suggestion.type}-${suggestion.value}`}
                     variant="ghost"

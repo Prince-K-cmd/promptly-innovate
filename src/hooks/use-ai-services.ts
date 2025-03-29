@@ -290,7 +290,7 @@ export function useAIServices() {
   const generateWithProvider = useCallback(async (
     provider: string,
     request: AIPromptRequest,
-    type: 'suggestions' | 'prompt' = 'suggestions'
+    type: 'suggestions' | 'prompt' | 'test' = 'suggestions'
   ): Promise<AISuggestion[] | string> => {
     setIsGenerating(true);
 
@@ -317,7 +317,7 @@ export function useAIServices() {
         return type === 'suggestions' ? [] : '';
       }
 
-      if (type === 'prompt' && !service.generatePrompt) {
+      if ((type === 'prompt' || type === 'test') && !service.generatePrompt) {
         toast({
           variant: "warning",
           title: `Prompt generation not supported`,
@@ -328,6 +328,21 @@ export function useAIServices() {
 
       if (type === 'suggestions') {
         return await service.generateSuggestions(request);
+      } else if (type === 'test' && request.prompt) {
+        // For test mode, we'll use the generatePrompt method but with a special request
+        // that includes the combined prompt and sample input
+        console.log('Testing prompt with AI:', request.prompt);
+
+        // Create a custom request for testing
+        const testRequest: AIPromptRequest = {
+          customPrompt: request.prompt, // Use the combined prompt directly
+          category: request.category,
+          tone: request.tone,
+          audience: request.audience,
+          step: request.step
+        };
+
+        return await service.generatePrompt(testRequest);
       } else {
         return await service.generatePrompt(request);
       }

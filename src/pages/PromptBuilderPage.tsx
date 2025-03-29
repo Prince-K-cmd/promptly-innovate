@@ -39,24 +39,134 @@ const PromptBuilderPage = () => {
     getAvailableProviders
   } = useAIServices();
 
-  const [formData, setFormData] = useState<PromptBuilderFormData>(defaultFormData);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [generatedPrompt, setGeneratedPrompt] = useState('');
+  // Load saved form data from localStorage if available
+  const loadSavedFormData = (): PromptBuilderFormData => {
+    try {
+      const savedData = localStorage.getItem('promptBuilderFormData');
+
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Error loading saved form data:', error);
+    }
+    return defaultFormData;
+  };
+
+  const [formData, setFormData] = useState<PromptBuilderFormData>(loadSavedFormData());
+  const [currentStep, setCurrentStep] = useState(() => {
+    try {
+      const savedStep = localStorage.getItem('promptBuilderStep');
+      return savedStep ? parseInt(savedStep, 10) : 0;
+    } catch (error) {
+      return 0;
+    }
+  });
+  const [generatedPrompt, setGeneratedPrompt] = useState(() => {
+    try {
+      return localStorage.getItem('promptBuilderGeneratedPrompt') || '';
+    } catch (error) {
+      return '';
+    }
+  });
   const [suggestions, setSuggestions] = useState([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [activeProvider, setActiveProvider] = useState<string | null>(null);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
 
   const debouncedFormData = useDebounce(formData, 500);
 
-  // If not authenticated, show login prompt
+  // Save form data to localStorage whenever it changes
   useEffect(() => {
+    try {
+      localStorage.setItem('promptBuilderFormData', JSON.stringify(formData));
+    } catch (error) {
+      console.error('Error saving form data to localStorage:', error);
+    }
+  }, [formData]);
+
+  // Save current step to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('promptBuilderStep', currentStep.toString());
+    } catch (error) {
+      console.error('Error saving step to localStorage:', error);
+    }
+  }, [currentStep]);
+
+  // Save generated prompt to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('promptBuilderGeneratedPrompt', generatedPrompt);
+    } catch (error) {
+      console.error('Error saving generated prompt to localStorage:', error);
+    }
+  }, [generatedPrompt]);
+
+  // Initialize page and handle authentication state
+  useEffect(() => {
+    // Show login prompt if not authenticated
     if (!isAuthenticated) {
       setShowLoginPrompt(true);
     }
-    // Set page as loaded after initial render
-    setIsPageLoading(false);
+
+    // Set page as loaded after a short delay to ensure all state is properly initialized
+    const timer = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [isAuthenticated]);
+
+  // Load initial suggestions only once when the component mounts
+  useEffect(() => {
+    // Only load suggestions if authenticated and page is ready
+    if (!isAuthenticated || isPageLoading) {
+      return;
+    }
+
+    // Use a flag to prevent multiple calls
+    let isMounted = true;
+
+    const loadInitialSuggestions = async () => {
+      // Don't load if we already have suggestions
+      if (suggestions.length > 0) {
+        return;
+      }
+
+      try {
+        // Make sure we have the current form data
+        console.log('Loading initial suggestions for step:', currentStep);
+        console.log('Current form data:', formData);
+
+        const initialSuggestions = await generateSuggestions({
+          ...formData,
+          step: currentStep
+        });
+
+        // Only update state if component is still mounted
+        if (isMounted) {
+          console.log('Setting initial suggestions:', initialSuggestions);
+          setSuggestions(initialSuggestions);
+        }
+      } catch (error) {
+        console.error('Error loading initial suggestions:', error);
+      }
+    };
+
+    // Add a small delay to ensure all state is properly initialized
+    const timer = setTimeout(() => {
+      loadInitialSuggestions();
+    }, 500);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isPageLoading]); // Intentionally omitting other dependencies to prevent infinite loops
 
   // Set active provider based on available API keys - only run once when apiKeys change
   useEffect(() => {
@@ -73,12 +183,11 @@ const PromptBuilderPage = () => {
     }
   }, [apiKeys, getAvailableProviders, isAuthenticated]);
 
-  // Track if suggestions are being generated to prevent duplicate calls
-  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  // This comment is kept for clarity but the state declaration has been moved up
 
   // Generate suggestions when form data changes or when step changes
   useEffect(() => {
-    // Only fetch suggestions if we're authenticated
+    // Only fetch suggestions if we're authenticated and not already fetching
     if (!isAuthenticated || isFetchingSuggestions || isGenerating) {
       return;
     }
@@ -89,7 +198,12 @@ const PromptBuilderPage = () => {
       return;
     }
 
-    // Use a ref to track the current request
+    // Skip if we already have suggestions and nothing has changed
+    if (suggestions.length > 0 && !debouncedFormData.category) {
+      return;
+    }
+
+    // Use a flag to track the current request
     let isCancelled = false;
 
     const fetchSuggestions = async () => {
@@ -126,7 +240,9 @@ const PromptBuilderPage = () => {
       isCancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [debouncedFormData, currentStep, generateSuggestions, isAuthenticated, isFetchingSuggestions, isGenerating]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedFormData, currentStep, isAuthenticated, isFetchingSuggestions, isGenerating, suggestions.length]);
+  // Note: generateSuggestions is intentionally omitted to prevent infinite loops
 
   // Update form data
   const updateFormData = (field: string, value: string) => {
@@ -314,22 +430,71 @@ const PromptBuilderPage = () => {
     }
   };
 
+  // Helper function to handle snippet suggestions based on category
+  const handleSnippetSuggestion = (suggestion: AISuggestion) => {
+    const suggestionValue = suggestion.value || suggestion.text;
+
+    // Handle snippets differently based on the current step and category
+    if (currentStep === 3) {
+      // If we're on the final step, add the snippet to the goal field
+      updateFormData('goal', suggestionValue);
+      return;
+    }
+
+    // Handle based on category
+    switch (formData.category) {
+      case 'creative_writing':
+        // For creative writing, add snippets to appropriate fields
+        if (!formData.components.theme) {
+          updateFormData('component.theme', suggestionValue);
+        } else if (!formData.components.character) {
+          updateFormData('component.character', suggestionValue);
+        } else {
+          updateFormData('component.setting', suggestionValue);
+        }
+        break;
+
+      case 'business':
+        // For business, add snippets to appropriate fields
+        if (!formData.components.documentType) {
+          updateFormData('component.documentType', suggestionValue);
+        } else if (!formData.components.topic) {
+          updateFormData('component.topic', suggestionValue);
+        } else {
+          updateFormData('component.sections', suggestionValue);
+        }
+        break;
+
+      default:
+        // Default: add to goal field
+        updateFormData('goal', suggestionValue);
+    }
+  };
+
   // Handle suggestion click
-  const handleSuggestionClick = (suggestion: AISuggestion) => {
-    if (suggestion.type === 'category') {
-      updateFormData('category', suggestion.value);
-    } else if (suggestion.type === 'tone') {
-      updateFormData('tone', suggestion.value);
-    } else if (suggestion.type === 'snippet' && suggestion.snippet) {
-      // Add snippet to appropriate field based on its type
-      const snippet = suggestion.snippet;
-      if (snippet.type === 'intro') {
-        updateFormData('goal', suggestion.text);
-      } else if (snippet.type === 'context' && formData.category === 'creative_writing') {
-        updateFormData('component.setting', suggestion.text);
-      } else if (snippet.type === 'instruction' && formData.category === 'creative_writing') {
-        updateFormData('component.character', suggestion.text);
-      }
+  const handleSuggestionClick = async (suggestion: AISuggestion) => {
+    // Update form data based on suggestion type
+    switch (suggestion.type) {
+      case 'category':
+        updateFormData('category', suggestion.value);
+        break;
+
+      case 'tone':
+        updateFormData('tone', suggestion.value);
+        break;
+
+      case 'audience':
+        updateFormData('audience', suggestion.value);
+        break;
+
+      case 'snippet':
+        handleSnippetSuggestion(suggestion);
+        break;
+    }
+
+    // If we're on the final step, regenerate the prompt to include the new suggestion
+    if (currentStep === 3) {
+      await generatePrompt();
     }
   };
 
@@ -369,10 +534,12 @@ const PromptBuilderPage = () => {
     }
   };
 
-  if (showLoginPrompt) {
+  // Render login prompt if user is not authenticated
+  if (!isAuthenticated && showLoginPrompt) {
     return <LoginPrompt message="Log in to build and save your custom prompts with personalized suggestions!" onClose={() => setShowLoginPrompt(false)} />;
   }
 
+  // Always render the main component structure, even during loading
   return (
     <div className="container py-8">
       <SeoComponent
@@ -380,17 +547,19 @@ const PromptBuilderPage = () => {
         description="Build custom prompts with AI-powered personalized suggestions"
       />
 
+      {/* Always show the header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold gradient-text mb-2">Interactive Prompt Builder</h1>
+        <p className="text-muted-foreground">Create custom prompts with personalized suggestions</p>
+      </div>
+
+      {/* Show loading spinner or content */}
       {isPageLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : (
         <>
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold gradient-text mb-2">Interactive Prompt Builder</h1>
-            <p className="text-muted-foreground">Create custom prompts with personalized suggestions</p>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card className="p-6">

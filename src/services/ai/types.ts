@@ -13,6 +13,8 @@ export interface AIPromptRequest {
   goal?: string;
   components?: Record<string, string>;
   step: number; // Current step in the prompt builder
+  prompt?: string; // Used for testing prompts
+  customPrompt?: string; // Used for direct prompt input (bypassing generation)
 }
 
 export interface AIServiceConfig {

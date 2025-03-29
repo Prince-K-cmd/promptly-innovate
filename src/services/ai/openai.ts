@@ -98,24 +98,29 @@ export class OpenAIService implements AIService {
   private createPromptForSuggestions(request: AIPromptRequest): string {
     const { category, tone, audience, step } = request;
 
-    let prompt = 'Generate suggestions for a prompt builder in JSON format. ';
+    let prompt = 'Generate suggestions for a prompt builder in JSON format. You MUST return EXACTLY 5 suggestions, no more and no less. ';
 
     if (step === 0) {
-      prompt += 'The user is selecting a category. Suggest 5 categories for prompts.';
+      prompt += 'The user is selecting a category. Suggest 5 diverse categories for prompts.';
     } else if (step === 1) {
-      prompt += `The user selected "${category}" as the category. Suggest 5 tones that would work well for this category.`;
+      prompt += `The user selected "${category}" as the category. Suggest 5 different tones that would work well for this category.`;
     } else if (step === 2) {
-      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone. Suggest 5 potential audiences for this prompt.`;
+      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone. Suggest 5 distinct potential audiences for this prompt.`;
     } else if (step === 3) {
-      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone for ${audience || 'general'} audience. Suggest 5 snippets or components that could enhance this prompt.`;
+      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone for ${audience || 'general'} audience. Suggest 5 useful snippets or components that could enhance this prompt.`;
     }
 
-    prompt += ' Return a JSON object with an array called "suggestions" where each item has "type" (category, tone, audience, or snippet), "value" (the actual suggestion), and "text" (a user-friendly description of the suggestion).';
+    prompt += ' Return a JSON object with an array called "suggestions" containing EXACTLY 5 items. Each item must have "type" (category, tone, audience, or snippet), "value" (the actual suggestion), and "text" (a user-friendly description of the suggestion).';
 
     return prompt;
   }
 
   private createPromptForGeneration(request: AIPromptRequest): string {
+    // If customPrompt is provided, use it directly (for testing)
+    if (request.customPrompt) {
+      return request.customPrompt;
+    }
+
     const { category, tone, audience, goal, components } = request;
 
     let prompt = 'Generate a prompt based on these requirements. Your response should ONLY include the prompt text itself with no additional explanations, introductions, or formatting:\n\n';
