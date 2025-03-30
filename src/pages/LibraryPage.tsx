@@ -256,15 +256,28 @@ const LibraryPage = () => {
             <Settings className="mr-2 h-5 w-5" />
             Manage Categories
           </Button>
-          <Button onClick={() => navigate('/create')} className="button-hover">
+          <Button
+            onClick={() => navigate('/create')}
+            className="button-hover hidden sm:flex"
+          >
             <PlusCircle className="mr-2 h-5 w-5" />
             Create Prompt
           </Button>
         </div>
       </div>
 
-      {/* Mobile categories button */}
-      <div className="sm:hidden mb-4">
+      {/* Mobile buttons */}
+      <div className="sm:hidden space-y-3 mb-4">
+        {/* Create Prompt button for mobile */}
+        <Button
+          onClick={() => navigate('/create')}
+          className="w-full"
+        >
+          <PlusCircle className="mr-2 h-5 w-5" />
+          Create Prompt
+        </Button>
+
+        {/* Manage Categories button for mobile */}
         <Button
           variant="outline"
           onClick={() => navigate('/categories')}
