@@ -190,7 +190,7 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return { id, ...promptData, updated_at: new Date().toISOString() };
       } else {
-        // Check if the user owns this prompt before updating
+        // Only check ownership for non-local prompts when user is logged in
         const { data: promptData, error: promptError } = await supabase
           .from('prompts')
           .select('user_id')
@@ -235,8 +235,8 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
 
   const deletePrompt = async (id: string) => {
     try {
+      // For local prompts or non-logged-in users, allow deletion from localStorage
       if (id.startsWith('local-') || !user) {
-        // Handle local prompts or when user is not logged in
         const existingPrompts = localStorage.getItem('promptiverse_prompts');
         const prompts = existingPrompts ? JSON.parse(existingPrompts) : [];
         
@@ -252,7 +252,7 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return true;
       } else {
-        // Check if the user owns this prompt before deleting
+        // Only check ownership for non-local prompts when user is logged in
         const { data: promptData, error: promptError } = await supabase
           .from('prompts')
           .select('user_id')
