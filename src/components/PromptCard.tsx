@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Prompt } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Bookmark, BookmarkCheck, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useFavorites } from '@/hooks/use-favorites';
+import { usePrompts } from '@/hooks/use-prompts';
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -52,9 +53,11 @@ const PromptCard: React.FC<PromptCardProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { toggleFavorite, isFavorited } = useFavorites();
+  const { sharePrompt } = usePrompts();
   const [showFullText, setShowFullText] = useState(false);
   
-  const isOwner = user?.id === prompt.user_id || prompt.user_id === 'local';
+  const isLocalPrompt = prompt.user_id === 'local';
+  const isOwner = user?.id === prompt.user_id || isLocalPrompt;
   const truncatedText = prompt.text.length > 150 ? `${prompt.text.substring(0, 150)}...` : prompt.text;
   
   const handleCopy = () => {
@@ -74,7 +77,27 @@ const PromptCard: React.FC<PromptCardProps> = ({
   };
   
   const handleToggleFavorite = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "Please sign in to favorite prompts",
+      });
+      return;
+    }
     await toggleFavorite(prompt.id);
+  };
+  
+  const handleShare = async () => {
+    try {
+      await sharePrompt(prompt);
+      toast({
+        title: "Prompt shared",
+        description: "A copy has been added to your prompts.",
+      });
+    } catch (error) {
+      console.error("Error sharing prompt:", error);
+    }
   };
   
   // Format date with day included
@@ -128,53 +151,57 @@ const PromptCard: React.FC<PromptCardProps> = ({
               </Button>
             )}
             
-            {isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleCopy}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    <span>Copy</span>
-                  </DropdownMenuItem>
-                  {isOwner && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleEdit}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Delete</span>
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this prompt.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopy}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  <span>Copy</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span>Share</span>
+                </DropdownMenuItem>
+                
+                {(isOwner || isLocalPrompt) && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleEdit}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      <span>Edit</span>
+                    </DropdownMenuItem>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete</span>
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this prompt.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </CardHeader>

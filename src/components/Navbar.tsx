@@ -1,7 +1,9 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from "@/contexts/ThemeContext"
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -28,14 +30,16 @@ import {
   Settings,
   LogOut,
   LogIn,
-  BookmarkCheck
+  BookmarkCheck,
+  Search
 } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
   }
@@ -45,28 +49,12 @@ const Navbar: React.FC = () => {
     navigate('/login');
   };
 
-  const navItems = [
-    {
-      title: "Home",
-      href: "/",
-      icon: <Home className="h-5 w-5" />,
-    },
-    {
-      title: "Library",
-      href: "/library",
-      icon: <Library className="h-5 w-5" />,
-    },
-    {
-      title: "Favorites",
-      href: "/favorites",
-      icon: <BookmarkCheck className="h-5 w-5" />,
-    },
-    {
-      title: "Builder",
-      href: "/builder",
-      icon: <PenLine className="h-5 w-5" />,
-    },
-  ];
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+    }
+  };
 
   return (
     <nav className="bg-background border-b sticky top-0 z-50">
@@ -75,19 +63,41 @@ const Navbar: React.FC = () => {
           Promptiverse
         </Link>
 
-        <div className="hidden md:flex items-center space-x-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.title}
-              to={item.href}
-              className="flex items-center text-sm font-medium hover:underline"
-            >
-              {item.icon}
-              <span className="ml-2">{item.title}</span>
+        <div className="hidden md:flex items-center space-x-8">
+          <form onSubmit={handleSearch} className="relative w-64">
+            <Input
+              type="search"
+              placeholder="Search prompts..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          </form>
+          
+          <div className="flex items-center space-x-4">
+            <Link to="/" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <Home className="h-5 w-5" />
+              <span>Home</span>
             </Link>
-          ))}
+            
+            <Link to="/library" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <Library className="h-5 w-5" />
+              <span>Library</span>
+            </Link>
+            
+            <Link to="/favorites" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <BookmarkCheck className="h-5 w-5" />
+              <span>Favorites</span>
+            </Link>
+            
+            <Link to="/builder" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <PenLine className="h-5 w-5" />
+              <span>Builder</span>
+            </Link>
+          </div>
 
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
             {theme === "dark" ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
             <span className="sr-only">Toggle theme</span>
           </Button>
@@ -152,34 +162,82 @@ const Navbar: React.FC = () => {
                 Navigate through the app.
               </SheetDescription>
             </SheetHeader>
+            
+            <form onSubmit={handleSearch} className="relative mt-4 mb-6">
+              <Input
+                type="search"
+                placeholder="Search prompts..."
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Button type="submit" className="sr-only">Search</Button>
+            </form>
+            
             <div className="grid gap-4 py-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.title}
-                  to={item.href}
-                  className="flex items-center text-sm font-medium hover:underline"
-                >
-                  {item.icon}
-                  <span className="ml-2">{item.title}</span>
-                </Link>
-              ))}
+              <Link
+                to="/"
+                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
+              >
+                <Home className="h-5 w-5" />
+                <span>Home</span>
+              </Link>
+              
+              <Link
+                to="/library"
+                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
+              >
+                <Library className="h-5 w-5" />
+                <span>Library</span>
+              </Link>
+              
+              <Link
+                to="/favorites"
+                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
+              >
+                <BookmarkCheck className="h-5 w-5" />
+                <span>Favorites</span>
+              </Link>
+              
+              <Link
+                to="/builder"
+                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
+              >
+                <PenLine className="h-5 w-5" />
+                <span>Builder</span>
+              </Link>
 
-              <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                {theme === "dark" ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
-                <span className="sr-only">Toggle theme</span>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleTheme} 
+                className="flex items-center justify-start px-2"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="h-5 w-5 mr-2" />
+                    <span>Light mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-5 w-5 mr-2" />
+                    <span>Dark mode</span>
+                  </>
+                )}
               </Button>
 
               {user ? (
                 <>
-                  <Button variant="ghost" className="w-full justify-start" onClick={() => navigate('/profile')}>
+                  <Button variant="ghost" className="justify-start" onClick={() => navigate('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start" onClick={() => navigate('/settings')}>
+                  <Button variant="ghost" className="justify-start" onClick={() => navigate('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
+                  <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </Button>

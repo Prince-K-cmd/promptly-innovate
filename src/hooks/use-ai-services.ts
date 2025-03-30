@@ -1,369 +1,248 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
 import { useApiKeys } from '@/hooks/use-api-keys';
-import { useToast } from '@/hooks/use-toast';
-import { createAIService, getFallbackSuggestions, AIPromptRequest, AISuggestion } from '@/services/ai';
+import { AIService, AIServiceResponse, ChatMessage } from '@/services/ai/types';
+import { ChatCompletionCreateParams } from 'openai/resources/chat/completions';
+import * as OpenAIService from '@/services/ai/openai';
+import * as GeminiService from '@/services/ai/gemini';
+import * as GroqService from '@/services/ai/groq';
 
-// Simple cache for AI responses to prevent duplicate API calls
-interface CacheEntry {
-  timestamp: number;
-  data: any;
-}
-
-const suggestionCache = new Map<string, CacheEntry>();
-const promptCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 60000; // Cache entries expire after 1 minute
-
-// Create a cache key from a request
-function createCacheKey(request: AIPromptRequest): string {
-  return JSON.stringify({
-    category: request.category || '',
-    tone: request.tone || '',
-    audience: request.audience || '',
-    goal: request.goal || '',
-    step: request.step || 0
-  });
-}
-
-export function useAIServices() {
-  const { apiKeys, getApiKeyByProvider } = useApiKeys();
+export const useAIServices = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { apiKeys } = useApiKeys();
 
-  // Clear expired cache entries
-  useEffect(() => {
-    const now = Date.now();
-
-    // Clear expired suggestion cache entries
-    suggestionCache.forEach((entry, key) => {
-      if (now - entry.timestamp > CACHE_TTL) {
-        suggestionCache.delete(key);
-      }
-    });
-
-    // Clear expired prompt cache entries
-    promptCache.forEach((entry, key) => {
-      if (now - entry.timestamp > CACHE_TTL) {
-        promptCache.delete(key);
-      }
-    });
-  }, []);
-
-  // Get available AI providers
-  const getAvailableProviders = useCallback(() => {
-    return apiKeys
-      .filter(key => ['openai', 'groq', 'gemini'].includes(key.provider))
-      .map(key => key.provider);
-  }, [apiKeys]);
-
-  // Helper function to try generating suggestions with a specific provider
-  const tryProviderForSuggestions = useCallback(async (
-    provider: string,
-    request: AIPromptRequest,
-    cacheKey: string
-  ): Promise<AISuggestion[] | null> => {
-    try {
-      const apiKey = getApiKeyByProvider(provider);
-
-      if (!apiKey) {
-        console.warn(`No API key found for ${provider}`);
-        return null;
-      }
-
-      const service = createAIService(provider, { apiKey: apiKey.key });
-
-      if (!service) {
-        console.warn(`Failed to initialize ${provider} service`);
-        return null;
-      }
-
-      console.log(`Attempting to generate suggestions with ${provider}...`);
-      const suggestions = await service.generateSuggestions(request);
-      console.log(`Successfully generated suggestions with ${provider}`);
-
-      // Cache the result
-      suggestionCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: suggestions
-      });
-
-      return suggestions;
-    } catch (error) {
-      console.error(`Error with ${provider} service:`, error);
-      if (error instanceof Error) {
-        // Show toast only for specific errors that might need user attention
-        if (error.message.includes('API key') || error.message.includes('authentication')) {
-          toast({
-            variant: "warning",
-            title: `${provider} API Key Issue`,
-            description: `There may be an issue with your ${provider} API key. Please check your settings.`,
-          });
-        } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
-          toast({
-            variant: "warning",
-            title: `Rate Limit Exceeded`,
-            description: `${provider} API rate limit exceeded. Please wait a moment before trying again.`,
-          });
-          // Signal rate limit error
-          throw new Error('RATE_LIMIT');
-        }
-      }
-      return null;
+  // Check if a service has an API key
+  const hasApiKey = (service: AIService): boolean => {
+    switch (service) {
+      case 'openai':
+        return !!apiKeys.openai;
+      case 'gemini':
+        return !!apiKeys.gemini;
+      case 'groq':
+        return !!apiKeys.groq;
+      default:
+        return false;
     }
-  }, [getApiKeyByProvider, toast]);
+  };
 
-  // Generate suggestions using the first available AI provider
-  const generateSuggestions = useCallback(async (request: AIPromptRequest): Promise<AISuggestion[]> => {
-    // Return fallback suggestions immediately if no step is provided
-    if (request.step === undefined) {
-      return getFallbackSuggestions(0);
+  // Get a list of available services (those with API keys)
+  const getAvailableServices = (): AIService[] => {
+    const services: AIService[] = [];
+    if (hasApiKey('openai')) services.push('openai');
+    if (hasApiKey('gemini')) services.push('gemini');
+    if (hasApiKey('groq')) services.push('groq');
+    return services;
+  };
+
+  // Get service to use based on preference and availability
+  const getServiceToUse = (preferredService?: AIService): AIService | null => {
+    // If a preferred service is specified and has an API key, use it
+    if (preferredService && hasApiKey(preferredService)) {
+      return preferredService;
     }
 
-    // Check if we have providers before setting loading state
-    const availableProviders = getAvailableProviders();
-    if (availableProviders.length === 0) {
-      return getFallbackSuggestions(request.step);
+    // Otherwise, use the first available service
+    const availableServices = getAvailableServices();
+    if (availableServices.length > 0) {
+      return availableServices[0];
     }
 
-    // Check cache first
-    const cacheKey = createCacheKey(request);
-    const cachedEntry = suggestionCache.get(cacheKey);
+    // No services available
+    return null;
+  };
 
-    if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_TTL)) {
-      console.log('Using cached suggestions');
-      return cachedEntry.data;
+  // Generate a completion using a chat prompt
+  const generateChatCompletion = async (
+    messages: ChatMessage[],
+    options?: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      preferredService?: AIService;
     }
-
-    setIsGenerating(true);
+  ): Promise<AIServiceResponse> => {
+    setLoading(true);
+    setError(null);
 
     try {
-      // Try each provider in order until one succeeds
-      for (const provider of availableProviders) {
-        try {
-          const result = await tryProviderForSuggestions(provider, request, cacheKey);
-          if (result) {
-            return result;
-          }
-          // If null is returned, continue to the next provider
-        } catch (error) {
-          // If it's a rate limit error, return fallback suggestions immediately
-          if (error instanceof Error && error.message === 'RATE_LIMIT') {
-            return getFallbackSuggestions(request.step);
-          }
-          // For other errors, continue to the next provider
-        }
-      }
+      const serviceToUse = getServiceToUse(options?.preferredService);
 
-      // If all providers failed, return fallback suggestions
-      return getFallbackSuggestions(request.step);
-    } catch (error) {
-      console.error('Error generating suggestions:', error);
-      toast({
-        variant: "destructive",
-        title: "Failed to generate suggestions",
-        description: "An error occurred while generating AI suggestions.",
-      });
-      return getFallbackSuggestions(request.step);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [getAvailableProviders, tryProviderForSuggestions]);
-
-  // Helper function to try generating a prompt with a specific provider
-  const tryProviderForPrompt = useCallback(async (
-    provider: string,
-    request: AIPromptRequest,
-    cacheKey: string
-  ): Promise<string | null> => {
-    try {
-      const apiKey = getApiKeyByProvider(provider);
-
-      if (!apiKey) {
-        console.warn(`No API key found for ${provider}`);
-        return null;
-      }
-
-      const service = createAIService(provider, { apiKey: apiKey.key });
-
-      if (!service?.generatePrompt) {
-        console.warn(`Failed to initialize ${provider} service or service doesn't support prompt generation`);
-        return null;
-      }
-
-      console.log(`Attempting to generate prompt with ${provider}...`);
-      const prompt = await service.generatePrompt(request);
-      console.log(`Successfully generated prompt with ${provider}`);
-
-      // Cache the result
-      promptCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: prompt
-      });
-
-      return prompt;
-    } catch (error) {
-      console.error(`Error with ${provider} service:`, error);
-      if (error instanceof Error) {
-        // Show toast only for specific errors that might need user attention
-        if (error.message.includes('API key') || error.message.includes('authentication')) {
-          toast({
-            variant: "warning",
-            title: `${provider} API Key Issue`,
-            description: `There may be an issue with your ${provider} API key. Please check your settings.`,
-          });
-        } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
-          toast({
-            variant: "warning",
-            title: `Rate Limit Exceeded`,
-            description: `${provider} API rate limit exceeded. Please wait a moment before trying again.`,
-          });
-          // Signal rate limit error
-          throw new Error('RATE_LIMIT');
-        }
-      }
-      return null;
-    }
-  }, [getApiKeyByProvider, toast]);
-
-  // Generate a prompt using the first available AI provider
-  const generatePrompt = useCallback(async (request: AIPromptRequest): Promise<string> => {
-    // Check if we have providers before setting loading state
-    const availableProviders = getAvailableProviders();
-    if (availableProviders.length === 0) {
-      toast({
-        variant: "warning",
-        title: "No AI providers available",
-        description: "Add an API key in settings to enable AI-generated prompts.",
-      });
-      return '';
-    }
-
-    // Check cache first
-    const cacheKey = createCacheKey(request);
-    const cachedEntry = promptCache.get(cacheKey);
-
-    if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_TTL)) {
-      console.log('Using cached prompt');
-      return cachedEntry.data;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      // Try each provider in order until one succeeds
-      for (const provider of availableProviders) {
-        try {
-          const result = await tryProviderForPrompt(provider, request, cacheKey);
-          if (result) {
-            return result;
-          }
-          // If null is returned, continue to the next provider
-        } catch (error) {
-          // If it's a rate limit error, return empty string immediately
-          if (error instanceof Error && error.message === 'RATE_LIMIT') {
-            return '';
-          }
-          // For other errors, continue to the next provider
-        }
-      }
-
-      // If all providers failed, show error
-      toast({
-        variant: "destructive",
-        title: "Failed to generate prompt",
-        description: "All available AI providers failed to generate a prompt.",
-      });
-      return '';
-    } catch (error) {
-      console.error('Error generating prompt:', error);
-      toast({
-        variant: "destructive",
-        title: "Failed to generate prompt",
-        description: "An error occurred while generating the AI prompt.",
-      });
-      return '';
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [getAvailableProviders, tryProviderForPrompt, toast]);
-
-  // Generate with specific provider
-  const generateWithProvider = useCallback(async (
-    provider: string,
-    request: AIPromptRequest,
-    type: 'suggestions' | 'prompt' | 'test' = 'suggestions'
-  ): Promise<AISuggestion[] | string> => {
-    setIsGenerating(true);
-
-    try {
-      const apiKey = getApiKeyByProvider(provider);
-
-      if (!apiKey) {
+      if (!serviceToUse) {
         toast({
-          variant: "warning",
-          title: `No ${provider} API key found`,
-          description: `Add a ${provider} API key in settings to use this provider.`,
+          variant: "destructive",
+          title: "No API Keys Available",
+          description: "Please add API keys in the settings to use AI services.",
         });
-        return type === 'suggestions' ? [] : '';
+        setLoading(false);
+        return { success: false, text: '', error: 'No API keys available' };
       }
 
-      const service = createAIService(provider, { apiKey: apiKey.key });
+      let response: AIServiceResponse;
 
-      if (!service) {
+      switch (serviceToUse) {
+        case 'openai':
+          if (!apiKeys.openai) {
+            toast({
+              variant: "destructive",
+              title: "OpenAI API Key Missing",
+              description: "Please add your OpenAI API key in the settings.",
+            });
+            setLoading(false);
+            return { success: false, text: '', error: 'OpenAI API key missing' };
+          }
+
+          const openaiParams: ChatCompletionCreateParams = {
+            model: options?.model || 'gpt-3.5-turbo',
+            messages: messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            temperature: options?.temperature ?? 0.7,
+            max_tokens: options?.maxTokens,
+          };
+
+          response = await OpenAIService.createChatCompletion(apiKeys.openai, openaiParams);
+          break;
+
+        case 'gemini':
+          if (!apiKeys.gemini) {
+            toast({
+              variant: "destructive",
+              title: "Gemini API Key Missing",
+              description: "Please add your Gemini API key in the settings.",
+            });
+            setLoading(false);
+            return { success: false, text: '', error: 'Gemini API key missing' };
+          }
+
+          response = await GeminiService.createChatCompletion(
+            apiKeys.gemini,
+            messages,
+            options?.temperature ?? 0.7,
+            options?.maxTokens,
+            options?.model || 'gemini-pro'
+          );
+          break;
+
+        case 'groq':
+          if (!apiKeys.groq) {
+            toast({
+              variant: "destructive",
+              title: "Groq API Key Missing",
+              description: "Please add your Groq API key in the settings.",
+            });
+            setLoading(false);
+            return { success: false, text: '', error: 'Groq API key missing' };
+          }
+
+          response = await GroqService.createChatCompletion(
+            apiKeys.groq,
+            messages,
+            options?.model || 'llama3-8b-8192',
+            options?.temperature ?? 0.7,
+            options?.maxTokens
+          );
+          break;
+
+        default:
+          toast({
+            variant: "destructive",
+            title: "Unsupported AI Service",
+            description: "The selected AI service is not supported.",
+          });
+          setLoading(false);
+          return { success: false, text: '', error: 'Unsupported AI service' };
+      }
+
+      if (!response.success) {
         toast({
-          variant: "warning",
-          title: `Unsupported provider: ${provider}`,
-          description: "This AI provider is not supported.",
+          variant: "destructive",
+          title: "AI Generation Failed",
+          description: response.error || "Failed to generate text.",
         });
-        return type === 'suggestions' ? [] : '';
       }
 
-      if ((type === 'prompt' || type === 'test') && !service.generatePrompt) {
-        toast({
-          variant: "warning",
-          title: `Prompt generation not supported`,
-          description: `${provider} does not support prompt generation.`,
-        });
-        return '';
-      }
-
-      if (type === 'suggestions') {
-        return await service.generateSuggestions(request);
-      } else if (type === 'test' && request.prompt) {
-        // For test mode, we'll use the generatePrompt method but with a special request
-        // that includes the combined prompt and sample input
-        console.log('Testing prompt with AI:', request.prompt);
-
-        // Create a custom request for testing
-        const testRequest: AIPromptRequest = {
-          customPrompt: request.prompt, // Use the combined prompt directly
-          category: request.category,
-          tone: request.tone,
-          audience: request.audience,
-          step: request.step
-        };
-
-        return await service.generatePrompt(testRequest);
-      } else {
-        return await service.generatePrompt(request);
-      }
-    } catch (error) {
-      console.error(`Error with ${provider} service:`, error);
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.message || 'An unknown error occurred';
+      setError(errorMessage);
       toast({
         variant: "destructive",
-        title: `Failed to use ${provider}`,
-        description: "An error occurred while using this AI provider.",
+        title: "AI Generation Error",
+        description: errorMessage,
       });
-      return type === 'suggestions' ? [] : '';
+      return { success: false, text: '', error: errorMessage };
     } finally {
-      setIsGenerating(false);
+      setLoading(false);
     }
-  }, [getApiKeyByProvider, toast]);
+  };
+
+  // Improve a prompt using OpenAI
+  const improvePrompt = async (
+    promptText: string,
+    promptPurpose: string,
+    preferredService?: AIService
+  ): Promise<string> => {
+    const response = await generateChatCompletion(
+      [
+        {
+          role: 'system',
+          content: `You are an expert prompt engineer. Your task is to improve the provided prompt based on its intended purpose. Make the prompt clearer, more specific, and more likely to produce the desired output. Focus on adding details, removing ambiguities, and structuring the prompt effectively. Return ONLY the improved prompt text without explanations or additional commentary.`
+        },
+        {
+          role: 'user',
+          content: `Original Prompt: "${promptText}"\n\nPurpose of this prompt: ${promptPurpose}\n\nPlease improve this prompt to better achieve its purpose.`
+        }
+      ],
+      { 
+        temperature: 0.7,
+        preferredService 
+      }
+    );
+
+    return response.success ? response.text : promptText;
+  };
+
+  // Generate ideas for prompt purpose
+  const generatePurposeIdeas = async (
+    preferredService?: AIService
+  ): Promise<string[]> => {
+    const response = await generateChatCompletion(
+      [
+        {
+          role: 'system',
+          content: `You are a helpful assistant specialized in AI prompt engineering. Generate a list of 5 interesting and diverse prompt purposes that users might want to create prompts for. These should cover different domains like creative writing, coding, business, education, etc. Return ONLY the numbered list without any introduction or additional text. Each idea should be concise (10 words or less).`
+        }
+      ],
+      { 
+        temperature: 0.9,
+        preferredService 
+      }
+    );
+
+    if (!response.success) {
+      return [];
+    }
+
+    // Parse the response to get individual ideas
+    const ideas = response.text
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .map(line => line.replace(/^\d+\.\s*/, '').trim())
+      .slice(0, 5);
+
+    return ideas;
+  };
 
   return {
-    isGenerating,
-    getAvailableProviders,
-    generateSuggestions,
-    generatePrompt,
-    generateWithProvider
+    loading,
+    error,
+    hasApiKey,
+    getAvailableServices,
+    generateChatCompletion,
+    improvePrompt,
+    generatePurposeIdeas
   };
-}
+};

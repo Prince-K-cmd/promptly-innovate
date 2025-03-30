@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,64 +17,88 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     setError(null);
     
     try {
-      let query = supabase
-        .from('prompts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // First, get locally stored prompts (for both logged-in and non-logged-in users)
+      const localPromptsString = localStorage.getItem('promptiverse_prompts');
+      const localPrompts: Prompt[] = localPromptsString ? JSON.parse(localPromptsString) : [];
       
-      if (user) {
-        query = query.or(`user_id.eq.${user.id},is_public.eq.true`);
-      } else {
-        query = query.eq('is_public', true);
-      }
+      let filteredLocalPrompts = [...localPrompts];
       
       if (category && category !== 'all') {
-        query = query.eq('category', category);
+        filteredLocalPrompts = filteredLocalPrompts.filter(p => p.category === category);
       }
       
       if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,text.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        const term = searchTerm.toLowerCase();
+        filteredLocalPrompts = filteredLocalPrompts.filter(p => 
+          p.title?.toLowerCase().includes(term) || 
+          p.text?.toLowerCase().includes(term) || 
+          p.description?.toLowerCase().includes(term)
+        );
       }
       
       if (tags && tags.length > 0) {
-        const tagConditions = tags.map(tag => `tags.cs.{${tag}}`);
-        query = query.or(tagConditions.join(','));
+        filteredLocalPrompts = filteredLocalPrompts.filter(p => 
+          p.tags && tags.some(tag => p.tags.includes(tag))
+        );
       }
       
-      const { data, error: fetchError } = await query;
-      
-      if (fetchError) {
-        throw fetchError;
-      }
-      
-      if (!user) {
-        const localPromptsString = localStorage.getItem('promptiverse_prompts');
-        const localPrompts = localPromptsString ? JSON.parse(localPromptsString) : [];
+      // Then, for logged-in users, get prompts from Supabase too
+      if (user) {
+        let query = supabase
+          .from('prompts')
+          .select('*')
+          .order('created_at', { ascending: false });
         
-        let filteredLocalPrompts = [...localPrompts];
+        query = query.or(`user_id.eq.${user.id},is_public.eq.true`);
         
         if (category && category !== 'all') {
-          filteredLocalPrompts = filteredLocalPrompts.filter(p => p.category === category);
+          query = query.eq('category', category);
         }
         
         if (searchTerm) {
-          const term = searchTerm.toLowerCase();
-          filteredLocalPrompts = filteredLocalPrompts.filter(p => 
-            p.title?.toLowerCase().includes(term) || 
-            p.text?.toLowerCase().includes(term) || 
-            p.description?.toLowerCase().includes(term)
-          );
+          query = query.or(`title.ilike.%${searchTerm}%,text.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
         }
         
         if (tags && tags.length > 0) {
-          filteredLocalPrompts = filteredLocalPrompts.filter(p => 
-            p.tags && tags.some(tag => p.tags.includes(tag))
-          );
+          const tagConditions = tags.map(tag => `tags.cs.{${tag}}`);
+          query = query.or(tagConditions.join(','));
+        }
+        
+        const { data, error: fetchError } = await query;
+        
+        if (fetchError) {
+          throw fetchError;
         }
         
         setPrompts([...filteredLocalPrompts, ...(data || [])]);
       } else {
-        setPrompts(data || []);
+        // For non-logged-in users, also get public prompts from Supabase
+        let query = supabase
+          .from('prompts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .eq('is_public', true);
+        
+        if (category && category !== 'all') {
+          query = query.eq('category', category);
+        }
+        
+        if (searchTerm) {
+          query = query.or(`title.ilike.%${searchTerm}%,text.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+        
+        if (tags && tags.length > 0) {
+          const tagConditions = tags.map(tag => `tags.cs.{${tag}}`);
+          query = query.or(tagConditions.join(','));
+        }
+        
+        const { data, error: fetchError } = await query;
+        
+        if (fetchError) {
+          throw fetchError;
+        }
+        
+        setPrompts([...filteredLocalPrompts, ...(data || [])]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch prompts');
@@ -145,7 +170,8 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
 
   const updatePrompt = async (id: string, promptData: Partial<Prompt>) => {
     try {
-      if (id.startsWith('local-')) {
+      if (id.startsWith('local-') || !user) {
+        // Handle local prompts or when user is not logged in
         const existingPrompts = localStorage.getItem('promptiverse_prompts');
         const prompts = existingPrompts ? JSON.parse(existingPrompts) : [];
         
@@ -164,6 +190,19 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return { id, ...promptData, updated_at: new Date().toISOString() };
       } else {
+        // Check if the user owns this prompt before updating
+        const { data: promptData, error: promptError } = await supabase
+          .from('prompts')
+          .select('user_id')
+          .eq('id', id)
+          .single();
+        
+        if (promptError) throw promptError;
+        
+        if (promptData.user_id !== user.id) {
+          throw new Error('You do not have permission to update this prompt');
+        }
+        
         const { data, error } = await supabase
           .from('prompts')
           .update({
@@ -196,7 +235,8 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
 
   const deletePrompt = async (id: string) => {
     try {
-      if (id.startsWith('local-')) {
+      if (id.startsWith('local-') || !user) {
+        // Handle local prompts or when user is not logged in
         const existingPrompts = localStorage.getItem('promptiverse_prompts');
         const prompts = existingPrompts ? JSON.parse(existingPrompts) : [];
         
@@ -212,6 +252,19 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return true;
       } else {
+        // Check if the user owns this prompt before deleting
+        const { data: promptData, error: promptError } = await supabase
+          .from('prompts')
+          .select('user_id')
+          .eq('id', id)
+          .single();
+        
+        if (promptError) throw promptError;
+        
+        if (promptData.user_id !== user.id) {
+          throw new Error('You do not have permission to delete this prompt');
+        }
+        
         const { error } = await supabase
           .from('prompts')
           .delete()
@@ -237,6 +290,27 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     }
   };
 
+  // Function to share a prompt - creates a copy for the current user
+  const sharePrompt = async (prompt: Prompt) => {
+    try {
+      const { id, created_at, updated_at, user_id, ...promptData } = prompt;
+      const sharedPromptData = {
+        ...promptData,
+        title: `${promptData.title} (Shared)`,
+        is_public: false, // Default to private for shared prompts
+      };
+      
+      return await createPrompt(sharedPromptData);
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to share prompt",
+        description: err.message || 'An error occurred',
+      });
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchPrompts();
   }, [user, category, searchTerm, tags?.join(',')]);
@@ -248,6 +322,7 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     createPrompt,
     updatePrompt,
     deletePrompt,
+    sharePrompt,
     refreshPrompts: fetchPrompts,
   };
 };
