@@ -1,260 +1,177 @@
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from "@/contexts/ThemeContext"
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import {
-  Sun,
-  Moon,
-  Home,
-  Library,
-  PenLine,
-  User,
-  Settings,
-  LogOut,
-  LogIn,
-  BookmarkCheck,
-  Search
-} from "lucide-react";
+import { Search, Menu, LogIn, User, BookOpen, LogOut, Settings, Wand2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
-const Navbar: React.FC = () => {
-  const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
+const Navbar = () => {
+  const location = useLocation();
+  const auth = useAuth(); // Hook called unconditionally at the top
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+  // Explicitly define variables with defaults if auth context is not available
+  const isAuthenticated = auth?.isAuthenticated ?? false;
+  const profile = auth?.profile ?? null;
+  const signOut = auth?.signOut ?? (() => { console.error("SignOut function not available"); return Promise.resolve(); });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+  // Get user initials for avatar fallback
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
     }
+    if (profile?.username) {
+      return profile.username.substring(0, 2).toUpperCase();
+    }
+    return 'PV';
   };
+
+  const navLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Library', href: '/library' },
+    { name: 'Create', href: '/create' },
+    {
+      name: "Prompt Builder",
+      href: "/builder",
+      icon: <Wand2 className="h-4 w-4" />,
+      requiresAuth: true,
+    },
+  ];
 
   return (
-    <nav className="bg-background border-b sticky top-0 z-50">
-      <div className="container flex items-center justify-between py-4">
-        <Link to="/" className="font-bold text-2xl">
-          Promptiverse
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal rounded-xl p-1.5">
+            <BookOpen className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-bold text-xl">Promptiverse</span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-8">
-          <form onSubmit={handleSearch} className="relative w-64">
-            <Input
-              type="search"
-              placeholder="Search prompts..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          </form>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              to={link.href}
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                location.pathname === link.href
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Right Side - Auth & Profile */}
+        <div className="flex items-center space-x-4">
+          <Link to="/search" className="hidden md:flex text-muted-foreground hover:text-foreground transition-colors">
+            <Search className="h-5 w-5" />
+          </Link>
           
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-              <Home className="h-5 w-5" />
-              <span>Home</span>
-            </Link>
-            
-            <Link to="/library" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-              <Library className="h-5 w-5" />
-              <span>Library</span>
-            </Link>
-            
-            <Link to="/favorites" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-              <BookmarkCheck className="h-5 w-5" />
-              <span>Favorites</span>
-            </Link>
-            
-            <Link to="/builder" className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-              <PenLine className="h-5 w-5" />
-              <span>Builder</span>
-            </Link>
-          </div>
-
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-            {theme === "dark" ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
-
-          {user ? (
+          {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <User className="h-4 w-4" />
-                  <span className="sr-only">Open user menu</span>
-                </Button>
+                <Avatar className="h-8 w-8 cursor-pointer button-hover">
+                  <AvatarImage src={profile?.avatar_url} alt={profile?.username || "User"} />
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" forceMount>
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    {profile?.full_name && <p className="font-medium">{profile.full_name}</p>}
+                    {profile?.username && <p className="text-sm text-muted-foreground">{profile.username}</p>}
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>Sign out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/login">
-              <Button>
+            <Button variant="default" size="sm" asChild>
+              <Link to="/login" className="flex items-center">
                 <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-            </Link>
+                Sign In
+              </Link>
+            </Button>
           )}
-        </div>
-
-        <Sheet>
-          <SheetTrigger className="md:hidden">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="18" x2="20" y2="18" />
-            </svg>
-          </SheetTrigger>
-          <SheetContent side="left" className="sm:w-64">
-            <SheetHeader className="text-left">
-              <SheetTitle>Menu</SheetTitle>
-              <SheetDescription>
-                Navigate through the app.
-              </SheetDescription>
-            </SheetHeader>
-            
-            <form onSubmit={handleSearch} className="relative mt-4 mb-6">
-              <Input
-                type="search"
-                placeholder="Search prompts..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Button type="submit" className="sr-only">Search</Button>
-            </form>
-            
-            <div className="grid gap-4 py-4">
-              <Link
-                to="/"
-                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
-              >
-                <Home className="h-5 w-5" />
-                <span>Home</span>
-              </Link>
-              
-              <Link
-                to="/library"
-                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
-              >
-                <Library className="h-5 w-5" />
-                <span>Library</span>
-              </Link>
-              
-              <Link
-                to="/favorites"
-                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
-              >
-                <BookmarkCheck className="h-5 w-5" />
-                <span>Favorites</span>
-              </Link>
-              
-              <Link
-                to="/builder"
-                className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
-              >
-                <PenLine className="h-5 w-5" />
-                <span>Builder</span>
-              </Link>
-
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={toggleTheme} 
-                className="flex items-center justify-start px-2"
-              >
-                {theme === "dark" ? (
-                  <>
-                    <Sun className="h-5 w-5 mr-2" />
-                    <span>Light mode</span>
-                  </>
-                ) : (
-                  <>
-                    <Moon className="h-5 w-5 mr-2" />
-                    <span>Dark mode</span>
-                  </>
-                )}
+          
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
               </Button>
-
-              {user ? (
-                <>
-                  <Button variant="ghost" className="justify-start" onClick={() => navigate('/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Button>
-                  <Button variant="ghost" className="justify-start" onClick={() => navigate('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Button>
-                  <Button variant="ghost" className="justify-start" onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </Button>
-                </>
-              ) : (
-                <Link to="/login">
-                  <Button className="w-full">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login
-                  </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col gap-4 mt-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className={cn(
+                      "text-base font-medium transition-colors hover:text-primary p-2 rounded-md",
+                      location.pathname === link.href
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                <Link
+                  to="/search"
+                  className="text-base font-medium transition-colors hover:text-primary p-2 rounded-md text-muted-foreground flex items-center"
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  Search
                 </Link>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+                {!isAuthenticated && (
+                  <Link
+                    to="/login"
+                    className="text-base font-medium transition-colors hover:text-primary p-2 rounded-md text-muted-foreground flex items-center"
+                  >
+                    <LogIn className="h-5 w-5 mr-2" />
+                    Sign In
+                  </Link>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -48,64 +47,6 @@ export function usePromptBuilder() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  
-  // State for form data
-  const [formData, setFormData] = useState<PromptBuilderFormData>(() => {
-    try {
-      const savedData = localStorage.getItem('promptBuilderFormData');
-      if (savedData) {
-        return JSON.parse(savedData);
-      }
-    } catch (error) {
-      console.error('Error loading saved form data:', error);
-    }
-    return {
-      category: '',
-      tone: '',
-      audience: '',
-      goal: '',
-      components: {},
-    };
-  });
-
-  // Save form data to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('promptBuilderFormData', JSON.stringify(formData));
-    } catch (error) {
-      console.error('Error saving form data to localStorage:', error);
-    }
-  }, [formData]);
-
-  // Update form data
-  const updateFormData = (field: string, value: string) => {
-    setFormData(prev => {
-      if (field.startsWith('component.')) {
-        const componentKey = field.replace('component.', '');
-        return {
-          ...prev,
-          components: {
-            ...prev.components,
-            [componentKey]: value
-          }
-        };
-      }
-
-      return { ...prev, [field]: value };
-    });
-  };
-
-  // Reset form data
-  const resetFormData = () => {
-    setFormData({
-      category: '',
-      tone: '',
-      audience: '',
-      goal: '',
-      components: {},
-    });
-    localStorage.removeItem('promptBuilderFormData');
-  };
 
   // Fetch templates by category
   const useTemplates = (category?: string) => {
@@ -317,9 +258,6 @@ export function usePromptBuilder() {
   };
 
   return {
-    formData,
-    updateFormData,
-    resetFormData,
     useTemplates,
     useSnippets,
     useBuilderHistory,

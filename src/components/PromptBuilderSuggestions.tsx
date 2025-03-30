@@ -1,93 +1,162 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw } from 'lucide-react';
-
-interface Suggestion {
-  type: string;
-  value: string;
-  text: string;
-}
+import { Lightbulb, Plus, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { AISuggestion } from '@/services/ai';
 
 interface PromptBuilderSuggestionsProps {
-  suggestions: Suggestion[];
-  onSuggestionClick: (suggestion: Suggestion) => void;
-  isLoading: boolean;
-  providerName: string | null;
+  suggestions: AISuggestion[];
+  onSuggestionClick: (suggestion: AISuggestion) => void;
+  isLoading?: boolean;
+  providerName?: string;
 }
+
+// Helper function to get display name for suggestion type
+const getTypeName = (type: string): string => {
+  switch (type) {
+    case 'category':
+      return 'Categories';
+    case 'tone':
+      return 'Tones';
+    case 'audience':
+      return 'Audiences';
+    case 'snippet':
+      return 'Snippets';
+    default:
+      return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+};
 
 const PromptBuilderSuggestions: React.FC<PromptBuilderSuggestionsProps> = ({
   suggestions,
   onSuggestionClick,
-  isLoading,
-  providerName
+  isLoading = false,
+  providerName,
 }) => {
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'category':
-        return 'Category';
-      case 'tone':
-        return 'Tone';
-      case 'audience':
-        return 'Audience';
-      case 'snippet':
-        return 'Suggestion';
-      default:
-        return 'Suggestion';
+  // Group suggestions by type - defined before any conditional returns
+  const groupedSuggestions = React.useMemo(() => {
+    if (!suggestions || suggestions.length === 0) {
+      return {};
     }
-  };
 
+    const groups: Record<string, AISuggestion[]> = {};
+
+    suggestions.forEach(suggestion => {
+      if (!groups[suggestion.type]) {
+        groups[suggestion.type] = [];
+      }
+      groups[suggestion.type].push(suggestion);
+    });
+
+    return groups;
+  }, [suggestions]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              AI Suggestions
+            </div>
+            {providerName && (
+              <Badge variant="outline" className="text-xs">
+                {providerName}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Generating AI suggestions...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Empty state
+  if (!suggestions || suggestions.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center justify-between">
+            <div className="flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              AI Suggestions
+            </div>
+            {providerName && (
+              <Badge variant="outline" className="text-xs">
+                {providerName}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Continue building your prompt to see personalized suggestions
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Render suggestions grouped by type
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center justify-between">
           <div className="flex items-center">
-            <Sparkles className="h-4 w-4 mr-2 text-primary" />
-            <span>Suggestions</span>
+            <Lightbulb className="h-4 w-4 mr-2" />
+            AI Suggestions
           </div>
-          
           {providerName && (
-            <div className="text-xs font-normal text-muted-foreground">
-              via {providerName}
-            </div>
+            <Badge variant="outline" className="text-xs">
+              {providerName}
+            </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-4">
-            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Generating suggestions...</p>
-          </div>
-        ) : suggestions && suggestions.length > 0 ? (
-          <div className="space-y-3">
-            {suggestions.map((suggestion, index) => (
-              <div key={index} className="group">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-left h-auto py-2"
-                  onClick={() => onSuggestionClick(suggestion)}
-                >
-                  <div>
-                    <div className="text-xs font-medium text-muted-foreground mb-1">
-                      {getTypeLabel(suggestion.type)}
-                    </div>
-                    <div className="text-sm">{suggestion.text}</div>
-                  </div>
-                </Button>
+        <div className="space-y-4">
+          {Object.entries(groupedSuggestions).map(([type, typeSuggestions]) => (
+            <div key={type} className="space-y-2">
+              <div className="flex items-center">
+                <Badge variant="outline" className="text-xs">
+                  {getTypeName(type)}
+                </Badge>
               </div>
-            ))}
+
+              <div className="space-y-2">
+                {typeSuggestions.slice(0, 5).map((suggestion) => (
+                  <Button
+                    key={`${suggestion.type}-${suggestion.value}`}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-left h-auto py-2 px-3 hover:bg-muted"
+                    onClick={() => onSuggestionClick(suggestion)}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+                    <span className="line-clamp-2 text-sm">{suggestion.text}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div className="pt-2 text-xs text-center text-muted-foreground">
+            {providerName
+              ? `Suggestions powered by ${providerName}`
+              : 'Suggestions are personalized based on your prompt history'}
           </div>
-        ) : (
-          <div className="text-center p-4">
-            <p className="text-sm text-muted-foreground">No suggestions available yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Add more details to get personalized suggestions.
-            </p>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

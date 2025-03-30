@@ -1,101 +1,82 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { PromptBuilderFormData } from '@/hooks/use-prompt-builder';
+import { Badge } from '@/components/ui/badge';
+import { useCategories } from '@/hooks/use-categories';
 
 interface PromptBuilderPreviewProps {
   formData: PromptBuilderFormData;
   generatedPrompt: string;
 }
 
-const PromptBuilderPreview: React.FC<PromptBuilderPreviewProps> = ({
-  formData,
-  generatedPrompt
+const PromptBuilderPreview: React.FC<PromptBuilderPreviewProps> = ({ 
+  formData, 
+  generatedPrompt 
 }) => {
-  // Generate a simple preview prompt based on the form data
-  const generatePreviewPrompt = () => {
-    if (!formData.category) {
-      return "Your prompt preview will appear here once you've added some details.";
-    }
-
-    let prompt = '';
-
-    switch (formData.category) {
-      case 'creative_writing':
-        prompt = `Write a ${formData.tone || 'creative'} story`;
-        if (formData.components.theme) {
-          prompt += ` about ${formData.components.theme}`;
-        }
-        if (formData.components.character) {
-          prompt += ` featuring ${formData.components.character}`;
-        }
-        if (formData.components.setting) {
-          prompt += ` set in ${formData.components.setting}`;
-        }
-        break;
-
-      case 'business':
-        prompt = `Create a ${formData.components.documentType || 'business document'}`;
-        if (formData.components.topic) {
-          prompt += ` about ${formData.components.topic}`;
-        }
-        if (formData.audience) {
-          prompt += ` for ${formData.audience}`;
-        }
-        if (formData.components.sections) {
-          prompt += ` including sections on ${formData.components.sections}`;
-        }
-        break;
-
-      case 'coding':
-        prompt = `Write ${formData.components.language || 'code'}`;
-        if (formData.components.functionality) {
-          prompt += ` that ${formData.components.functionality}`;
-        }
-        if (formData.components.implementation) {
-          prompt += `. Implementation details: ${formData.components.implementation}`;
-        }
-        break;
-
-      default:
-        prompt = `Create ${formData.category || 'content'}`;
-        if (formData.tone) {
-          prompt += ` with a ${formData.tone} tone`;
-        }
-        if (formData.audience) {
-          prompt += ` for ${formData.audience}`;
-        }
-        if (formData.goal) {
-          prompt += `. ${formData.goal}`;
-        }
-    }
-
-    return prompt + '.';
-  };
+  const { categories } = useCategories();
+  
+  // Find the category name
+  const categoryName = React.useMemo(() => {
+    if (!formData.category) return 'Not selected';
+    const category = categories.find(c => c.id === formData.category);
+    return category ? category.name : formData.category.replace('_', ' ');
+  }, [formData.category, categories]);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Prompt Preview</CardTitle>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-lg">
+          <span>Prompt Preview</span>
+          {formData.category && (
+            <Badge variant="outline" className="ml-2">
+              {categoryName}
+            </Badge>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="preview">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="final" disabled={!generatedPrompt}>Final</TabsTrigger>
-          </TabsList>
-          <TabsContent value="preview" className="pt-4">
-            <div className="bg-muted p-4 rounded-md min-h-[150px]">
-              <p className="whitespace-pre-wrap">{generatePreviewPrompt()}</p>
+        <div className="space-y-2">
+          {formData.tone && (
+            <div className="text-sm">
+              <span className="font-medium">Tone:</span> {formData.tone}
             </div>
-          </TabsContent>
-          <TabsContent value="final" className="pt-4">
-            <div className="bg-muted p-4 rounded-md min-h-[150px]">
-              <p className="whitespace-pre-wrap">{generatedPrompt || "No generated prompt yet."}</p>
+          )}
+          
+          {formData.audience && (
+            <div className="text-sm">
+              <span className="font-medium">Audience:</span> {formData.audience}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+          
+          {Object.keys(formData.components || {}).length > 0 && (
+            <div className="text-sm space-y-1">
+              <span className="font-medium">Components:</span>
+              <ul className="ml-5 list-disc space-y-1">
+                {Object.entries(formData.components || {}).map(([key, value]) => (
+                  value && (
+                    <li key={key} className="text-xs">
+                      <span className="font-medium">{key.replace(/([A-Z])/g, ' $1').trim()}:</span> {value}
+                    </li>
+                  )
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <div className="border-t pt-2 mt-2">
+            <div className="font-medium text-sm mb-1">Generated Prompt:</div>
+            <div className="p-3 bg-muted rounded-md text-sm">
+              {generatedPrompt ? (
+                <p className="whitespace-pre-wrap">{generatedPrompt}</p>
+              ) : (
+                <span className="text-muted-foreground italic">
+                  Complete the steps to generate your prompt
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
