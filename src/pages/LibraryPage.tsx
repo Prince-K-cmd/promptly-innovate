@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,14 @@ import { usePrompts } from '@/hooks/use-prompts';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useCategories } from '@/hooks/use-categories';
 import PromptCard from '@/components/PromptCard';
+import PromptListItem from '@/components/PromptListItem';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt } from '@/lib/supabase';
-import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart } from 'lucide-react';
+import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart, Grid, List } from 'lucide-react';
 import { eventEmitter, EVENTS } from '@/lib/events';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -30,6 +33,11 @@ const LibraryPage = () => {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    // Try to get the saved view mode from localStorage
+    const savedViewMode = localStorage.getItem('promptLibraryViewMode');
+    return savedViewMode === 'list' ? 'list' : 'grid';
+  });
 
   // Get categories
   const { categories } = useCategories();
@@ -170,6 +178,14 @@ const LibraryPage = () => {
     }
   };
 
+  // Toggle view mode between grid and list
+  const toggleViewMode = () => {
+    const newMode = viewMode === 'grid' ? 'list' : 'grid';
+    setViewMode(newMode);
+    // Save preference to localStorage
+    localStorage.setItem('promptLibraryViewMode', newMode);
+  };
+
   // Handle tab change
   const handleTabChange = (value: string) => {
     setCurrentTab(value);
@@ -233,19 +249,58 @@ const LibraryPage = () => {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* View Mode Toggle */}
+              <div className="flex items-center bg-muted/40 rounded-lg p-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={toggleViewMode}
+                      >
+                        <Grid className="h-4 w-4" />
+                        <span className="sr-only">Grid view</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Grid view</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={toggleViewMode}
+                      >
+                        <List className="h-4 w-4" />
+                        <span className="sr-only">List view</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">List view</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
           </div>
 
           {/* Tags */}
@@ -328,16 +383,29 @@ const LibraryPage = () => {
               <p className="text-muted-foreground">Loading prompts...</p>
             </div>
           ) : prompts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {prompts.map(prompt => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  onEdit={handleEditPrompt}
-                  onDelete={handleDeletePrompt}
-                />
-              ))}
-            </div>
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {prompts.map(prompt => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    onEdit={handleEditPrompt}
+                    onDelete={handleDeletePrompt}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-4">
+                {prompts.map(prompt => (
+                  <PromptListItem
+                    key={prompt.id}
+                    prompt={prompt}
+                    onEdit={handleEditPrompt}
+                    onDelete={handleDeletePrompt}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="text-center py-16 bg-muted/30 rounded-lg">
               <h3 className="text-xl font-semibold mb-2">No prompts found</h3>
@@ -368,16 +436,29 @@ const LibraryPage = () => {
               <p className="text-muted-foreground">Loading favorites...</p>
             </div>
           ) : favoritePrompts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {favoritePrompts.map(prompt => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  onEdit={handleEditPrompt}
-                  onDelete={handleDeletePrompt}
-                />
-              ))}
-            </div>
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {favoritePrompts.map(prompt => (
+                  <PromptCard
+                    key={prompt.id}
+                    prompt={prompt}
+                    onEdit={handleEditPrompt}
+                    onDelete={handleDeletePrompt}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-4">
+                {favoritePrompts.map(prompt => (
+                  <PromptListItem
+                    key={prompt.id}
+                    prompt={prompt}
+                    onEdit={handleEditPrompt}
+                    onDelete={handleDeletePrompt}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="text-center py-16 bg-muted/30 rounded-lg">
               <h3 className="text-xl font-semibold mb-2">

@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -11,12 +10,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Prompt } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,26 +43,26 @@ interface PromptCardProps {
   className?: string;
 }
 
-const PromptCard: React.FC<PromptCardProps> = ({ 
-  prompt, 
-  onEdit, 
+const PromptCard: React.FC<PromptCardProps> = ({
+  prompt,
+  onEdit,
   onDelete,
-  className 
+  className
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isFavorite, addFavorite, removeFavorite } = useFavorites();
   const [showFullText, setShowFullText] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  
+
   // Check if prompt is a favorite
   const promptIsFavorite = user ? isFavorite(prompt.id) : false;
-  
+
   // Check if the user is owner of the prompt
   const isOwner = user?.id === prompt.user_id || prompt.user_id === 'local';
-  
+
   const truncatedText = prompt.text.length > 150 ? `${prompt.text.substring(0, 150)}...` : prompt.text;
-  
+
   // Handle copy to clipboard
   const handleCopy = () => {
     navigator.clipboard.writeText(prompt.text);
@@ -72,12 +71,12 @@ const PromptCard: React.FC<PromptCardProps> = ({
       description: "Prompt text has been copied to your clipboard.",
     });
   };
-  
+
   // Handle edit prompt
   const handleEdit = () => {
     if (onEdit) onEdit(prompt);
   };
-  
+
   // Handle delete confirmation
   const handleDeleteConfirm = () => {
     if (onDelete) onDelete(prompt.id);
@@ -93,7 +92,7 @@ const PromptCard: React.FC<PromptCardProps> = ({
       });
       return;
     }
-    
+
     if (promptIsFavorite) {
       await removeFavorite(prompt.id);
     } else {
@@ -110,7 +109,7 @@ const PromptCard: React.FC<PromptCardProps> = ({
   const handleCloseShareDialog = () => {
     setIsSharing(false);
   };
-  
+
   // Format date with day of week
   const formattedDate = new Date(prompt.created_at).toLocaleDateString('en-US', {
     weekday: 'short',
@@ -118,7 +117,7 @@ const PromptCard: React.FC<PromptCardProps> = ({
     day: 'numeric',
     year: 'numeric'
   });
-  
+
   return (
     <>
       <Card className={cn("card-hover overflow-hidden", className)}>
@@ -142,7 +141,7 @@ const PromptCard: React.FC<PromptCardProps> = ({
                 )}
               </CardDescription>
             </div>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -204,29 +203,29 @@ const PromptCard: React.FC<PromptCardProps> = ({
           <div className="text-sm leading-relaxed whitespace-pre-wrap">
             {showFullText ? prompt.text : truncatedText}
             {prompt.text.length > 150 && (
-              <Button 
-                variant="link" 
-                className="px-0 text-xs font-normal h-auto" 
+              <Button
+                variant="link"
+                className="px-0 text-xs font-normal h-auto"
                 onClick={() => setShowFullText(!showFullText)}
               >
                 {showFullText ? 'Show less' : 'Show more'}
               </Button>
             )}
           </div>
-          
+
           {prompt.description && (
             <p className="text-sm text-muted-foreground mt-2">{prompt.description}</p>
           )}
         </CardContent>
         <CardFooter className="flex flex-wrap gap-2 pt-0">
-          {prompt.tags && prompt.tags.map(tag => (
+          {prompt.tags?.map(tag => (
             <Badge key={tag} variant="secondary" className="text-xs font-normal">
               {tag}
             </Badge>
           ))}
-          
+
           <div className="flex-grow"></div>
-          
+
           <div className="flex gap-2">
             {user && (
               <Button
@@ -239,9 +238,9 @@ const PromptCard: React.FC<PromptCardProps> = ({
                 {promptIsFavorite ? "Favorited" : "Favorite"}
               </Button>
             )}
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleCopy}
             >
@@ -251,7 +250,7 @@ const PromptCard: React.FC<PromptCardProps> = ({
           </div>
         </CardFooter>
       </Card>
-      
+
       {/* Sharing Dialog */}
       {isSharing && (
         <SavePromptDialog
