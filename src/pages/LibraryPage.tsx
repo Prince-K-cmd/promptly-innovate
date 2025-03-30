@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt } from '@/lib/supabase';
 import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart } from 'lucide-react';
+import { eventEmitter, EVENTS } from '@/lib/events';
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -29,10 +30,10 @@ const LibraryPage = () => {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('all');
-  
+
   // Get categories
   const { categories } = useCategories();
-  
+
   // Get prompts based on filters
   const {
     prompts,
@@ -48,19 +49,56 @@ const LibraryPage = () => {
   );
 
   // Get favorites
-  const { favorites, loading: favoritesLoading } = useFavorites();
-  
-  // Filter prompts that are in favorites
+  const { favorites, loading: favoritesLoading, fetchFavorites } = useFavorites();
+
+  // Listen for favorites changes
+  useEffect(() => {
+    // Set up event listener for favorites changes
+    const unsubscribe = eventEmitter.on(EVENTS.FAVORITES_CHANGED, () => {
+      console.log('Favorites changed event received, refreshing favorites');
+      fetchFavorites();
+    });
+
+    // Clean up event listener on unmount
+    return () => {
+      unsubscribe();
+    };
+  }, [fetchFavorites]);
+
+  // Filter prompts that are in favorites with the same filters applied
   const favoritePrompts = React.useMemo(() => {
     if (favorites.length === 0) return [];
-    
+
     // Extract favorite prompt IDs
     const favoriteIds = favorites.map(fav => fav.prompt_id);
-    
-    // Filter prompts that match favorite IDs
-    return prompts.filter(prompt => favoriteIds.includes(prompt.id));
-  }, [prompts, favorites]);
-  
+
+    // Start with all prompts that match favorite IDs
+    let filtered = prompts.filter(prompt => favoriteIds.includes(prompt.id));
+
+    // Apply the same filters as the main tab
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(prompt => prompt.category === selectedCategory);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(prompt =>
+        prompt.title?.toLowerCase().includes(term) ||
+        prompt.text?.toLowerCase().includes(term) ||
+        prompt.description?.toLowerCase().includes(term)
+      );
+    }
+
+    if (activeTags.length > 0) {
+      filtered = filtered.filter(prompt => {
+        if (!prompt.tags) return false;
+        return activeTags.every(tag => prompt.tags.includes(tag));
+      });
+    }
+
+    return filtered;
+  }, [prompts, favorites, selectedCategory, searchTerm, activeTags]);
+
   // Get unique tags from prompts
   const allTags = React.useMemo(() => {
     const tagsSet = new Set<string>();
@@ -71,17 +109,17 @@ const LibraryPage = () => {
     });
     return Array.from(tagsSet);
   }, [prompts]);
-  
+
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
-  
+
   // Handle category selection
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
   };
-  
+
   // Handle tag toggle
   const toggleTag = (tag: string) => {
     if (activeTags.includes(tag)) {
@@ -90,25 +128,25 @@ const LibraryPage = () => {
       setActiveTags([...activeTags, tag]);
     }
   };
-  
+
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('All');
     setActiveTags([]);
   };
-  
+
   // Handle edit prompt
   const handleEditPrompt = (prompt: Prompt) => {
     setEditingPrompt(prompt);
     setIsDialogOpen(true);
   };
-  
+
   // Handle delete prompt
   const handleDeletePrompt = async (id: string) => {
     await deletePrompt(id);
   };
-  
+
   // Handle update prompt
   const handleUpdatePrompt = async (values: any) => {
     if (editingPrompt) {
@@ -122,18 +160,18 @@ const LibraryPage = () => {
   const handleTabChange = (value: string) => {
     setCurrentTab(value);
   };
-  
+
   // Get the current display prompts based on active tab
   const displayPrompts = currentTab === 'favorites' ? favoritePrompts : prompts;
   const isLoading = currentTab === 'favorites' ? favoritesLoading : loading;
-  
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Prompt Library</h1>
         <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate('/categories')}
             className="hidden sm:flex"
           >
@@ -146,11 +184,11 @@ const LibraryPage = () => {
           </Button>
         </div>
       </div>
-      
+
       {/* Mobile categories button */}
       <div className="sm:hidden mb-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => navigate('/categories')}
           className="w-full"
         >
@@ -158,7 +196,7 @@ const LibraryPage = () => {
           Manage Categories
         </Button>
       </div>
-      
+
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={handleTabChange} className="mb-6">
         <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
@@ -168,8 +206,8 @@ const LibraryPage = () => {
             Favorites
           </TabsTrigger>
         </TabsList>
-        
-        {/* Search and Filters */}
+
+        {/* Search and Filters - Shared across tabs */}
         <div className="mb-8 space-y-4 mt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-grow">
@@ -195,18 +233,20 @@ const LibraryPage = () => {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Tags */}
           {allTags.length > 0 && (
             <div className="bg-muted/30 p-4 rounded-lg">
               <div className="flex items-center mb-2">
                 <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <h3 className="text-sm font-medium">Filter by Tags</h3>
+                <h3 className="text-sm font-medium">
+                  {currentTab === 'favorites' ? 'Filter Favorites by Tags' : 'Filter by Tags'}
+                </h3>
                 {activeTags.length > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearFilters} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
                     className="ml-auto h-7 text-xs"
                   >
                     Clear all
@@ -230,8 +270,42 @@ const LibraryPage = () => {
               </div>
             </div>
           )}
+
+          {/* Current filter summary */}
+          {(searchTerm || selectedCategory !== 'All' || activeTags.length > 0) && (
+            <div className="bg-muted/20 p-3 rounded-lg text-sm">
+              <div className="flex items-center">
+                <span className="text-muted-foreground mr-2">Active filters:</span>
+                <div className="flex flex-wrap gap-2">
+                  {searchTerm && (
+                    <Badge variant="secondary" className="text-xs">
+                      Search: {searchTerm}
+                    </Badge>
+                  )}
+                  {selectedCategory !== 'All' && (
+                    <Badge variant="secondary" className="text-xs">
+                      Category: {categories.find(c => c.id === selectedCategory)?.name || selectedCategory}
+                    </Badge>
+                  )}
+                  {activeTags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      Tag: {tag}
+                    </Badge>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="ml-auto h-7 text-xs"
+                >
+                  Clear all
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-        
+
         {/* Tab Content */}
         <TabsContent value="all">
           {loading ? (
@@ -242,8 +316,8 @@ const LibraryPage = () => {
           ) : prompts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {prompts.map(prompt => (
-                <PromptCard 
-                  key={prompt.id} 
+                <PromptCard
+                  key={prompt.id}
                   prompt={prompt}
                   onEdit={handleEditPrompt}
                   onDelete={handleDeletePrompt}
@@ -272,7 +346,7 @@ const LibraryPage = () => {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="favorites">
           {favoritesLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -282,8 +356,8 @@ const LibraryPage = () => {
           ) : favoritePrompts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {favoritePrompts.map(prompt => (
-                <PromptCard 
-                  key={prompt.id} 
+                <PromptCard
+                  key={prompt.id}
                   prompt={prompt}
                   onEdit={handleEditPrompt}
                   onDelete={handleDeletePrompt}
@@ -292,9 +366,19 @@ const LibraryPage = () => {
             </div>
           ) : (
             <div className="text-center py-16 bg-muted/30 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">No favorite prompts yet</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0
+                  ? "No favorites match your filters"
+                  : "No favorite prompts yet"}
+              </h3>
               <p className="text-muted-foreground mb-6">
-                Add prompts to your favorites by clicking the heart icon.
+                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
+                  <>
+                    Try different filters or <Button variant="link" className="px-0 py-0 h-auto" onClick={clearFilters}>clear all filters</Button>.
+                  </>
+                ) : (
+                  "Add prompts to your favorites by clicking the heart icon."
+                )}
               </p>
               <Button onClick={() => navigate('/create')}>
                 <PlusCircle className="mr-2 h-5 w-5" />
@@ -304,7 +388,7 @@ const LibraryPage = () => {
           )}
         </TabsContent>
       </Tabs>
-      
+
       {/* Edit Prompt Dialog */}
       {editingPrompt && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
