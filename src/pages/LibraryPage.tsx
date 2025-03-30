@@ -168,117 +168,142 @@ const LibraryPage = () => {
             Favorites
           </TabsTrigger>
         </TabsList>
-      </Tabs>
-      
-      {/* Search and Filters */}
-      <div className="mb-8 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search prompts..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-10"
-            />
+        
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4 mt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search prompts..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Categories</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          
+          {/* Tags */}
+          {allTags.length > 0 && (
+            <div className="bg-muted/30 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <h3 className="text-sm font-medium">Filter by Tags</h3>
+                {activeTags.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters} 
+                    className="ml-auto h-7 text-xs"
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {allTags.map(tag => (
+                  <Badge
+                    key={tag}
+                    variant={activeTags.includes(tag) ? "default" : "outline"}
+                    className="cursor-pointer py-1"
+                    onClick={() => toggleTag(tag)}
+                  >
+                    {tag}
+                    {activeTags.includes(tag) && (
+                      <X className="ml-1 h-3 w-3" />
+                    )}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
-        {/* Tags */}
-        {allTags.length > 0 && (
-          <div className="bg-muted/30 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-              <h3 className="text-sm font-medium">Filter by Tags</h3>
-              {activeTags.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearFilters} 
-                  className="ml-auto h-7 text-xs"
-                >
-                  Clear all
-                </Button>
-              )}
+        {/* Tab Content */}
+        <TabsContent value="all">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+              <p className="text-muted-foreground">Loading prompts...</p>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {allTags.map(tag => (
-                <Badge
-                  key={tag}
-                  variant={activeTags.includes(tag) ? "default" : "outline"}
-                  className="cursor-pointer py-1"
-                  onClick={() => toggleTag(tag)}
-                >
-                  {tag}
-                  {activeTags.includes(tag) && (
-                    <X className="ml-1 h-3 w-3" />
-                  )}
-                </Badge>
+          ) : prompts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {prompts.map(prompt => (
+                <PromptCard 
+                  key={prompt.id} 
+                  prompt={prompt}
+                  onEdit={handleEditPrompt}
+                  onDelete={handleDeletePrompt}
+                />
               ))}
             </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Prompts Grid */}
-      <TabsContent value={currentTab} className="mt-0">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-            <p className="text-muted-foreground">Loading prompts...</p>
-          </div>
-        ) : displayPrompts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayPrompts.map(prompt => (
-              <PromptCard 
-                key={prompt.id} 
-                prompt={prompt}
-                onEdit={handleEditPrompt}
-                onDelete={handleDeletePrompt}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 bg-muted/30 rounded-lg">
-            <h3 className="text-xl font-semibold mb-2">
-              {currentTab === 'favorites' ? 'No favorite prompts yet' : 'No prompts found'}
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              {currentTab === 'favorites' ? (
-                <>
-                  Add prompts to your favorites by clicking the heart icon.
-                </>
-              ) : searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
-                <>
-                  No prompts match your search filters.
-                  <Button variant="link" onClick={clearFilters}>
-                    Clear all filters
-                  </Button>
-                </>
-              ) : (
-                "Create your first prompt to get started!"
-              )}
-            </p>
-            <Button onClick={() => navigate('/create')}>
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create a Prompt
-            </Button>
-          </div>
-        )}
-      </TabsContent>
+          ) : (
+            <div className="text-center py-16 bg-muted/30 rounded-lg">
+              <h3 className="text-xl font-semibold mb-2">No prompts found</h3>
+              <p className="text-muted-foreground mb-6">
+                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
+                  <>
+                    No prompts match your search filters.
+                    <Button variant="link" onClick={clearFilters}>
+                      Clear all filters
+                    </Button>
+                  </>
+                ) : (
+                  "Create your first prompt to get started!"
+                )}
+              </p>
+              <Button onClick={() => navigate('/create')}>
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create a Prompt
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="favorites">
+          {favoritesLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+              <p className="text-muted-foreground">Loading favorites...</p>
+            </div>
+          ) : favoritePrompts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {favoritePrompts.map(prompt => (
+                <PromptCard 
+                  key={prompt.id} 
+                  prompt={prompt}
+                  onEdit={handleEditPrompt}
+                  onDelete={handleDeletePrompt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-muted/30 rounded-lg">
+              <h3 className="text-xl font-semibold mb-2">No favorite prompts yet</h3>
+              <p className="text-muted-foreground mb-6">
+                Add prompts to your favorites by clicking the heart icon.
+              </p>
+              <Button onClick={() => navigate('/create')}>
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create a Prompt
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
       
       {/* Edit Prompt Dialog */}
       {editingPrompt && (
