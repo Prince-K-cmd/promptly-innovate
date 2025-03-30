@@ -92,23 +92,34 @@ const LibraryPage = () => {
     if (activeTags.length > 0) {
       filtered = filtered.filter(prompt => {
         if (!prompt.tags) return false;
-        return activeTags.every(tag => prompt.tags.includes(tag));
+
+        // Convert all prompt tags to lowercase for case-insensitive comparison
+        const lowercaseTags = prompt.tags.map(tag => tag.toLowerCase());
+
+        // Check if all active tags are included in the prompt's tags
+        return activeTags.every(tag => lowercaseTags.includes(tag));
       });
     }
 
     return filtered;
   }, [prompts, favorites, selectedCategory, searchTerm, activeTags]);
 
-  // Get unique tags from prompts
+  // Get unique tags from prompts based on current tab
   const allTags = React.useMemo(() => {
     const tagsSet = new Set<string>();
-    prompts.forEach(prompt => {
+
+    // Use different prompt sets based on the current tab
+    const promptsToUse = currentTab === 'favorites' ? favoritePrompts : prompts;
+
+    promptsToUse.forEach(prompt => {
       if (prompt.tags) {
-        prompt.tags.forEach(tag => tagsSet.add(tag));
+        // Convert all tags to lowercase for consistency
+        prompt.tags.forEach(tag => tagsSet.add(tag.toLowerCase()));
       }
     });
-    return Array.from(tagsSet);
-  }, [prompts]);
+
+    return Array.from(tagsSet).sort((a, b) => a.localeCompare(b));
+  }, [prompts, favoritePrompts, currentTab]);
 
   // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,10 +133,13 @@ const LibraryPage = () => {
 
   // Handle tag toggle
   const toggleTag = (tag: string) => {
-    if (activeTags.includes(tag)) {
-      setActiveTags(activeTags.filter(t => t !== tag));
+    // Convert tag to lowercase for consistency
+    const lowercaseTag = tag.toLowerCase();
+
+    if (activeTags.includes(lowercaseTag)) {
+      setActiveTags(activeTags.filter(t => t !== lowercaseTag));
     } else {
-      setActiveTags([...activeTags, tag]);
+      setActiveTags([...activeTags, lowercaseTag]);
     }
   };
 
