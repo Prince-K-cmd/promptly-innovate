@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { usePromptBuilder } from '@/hooks/use-prompt-builder';
-import { useToast } from '@/hooks/use-toast'; // Fix missing import
+import { useToast } from '@/hooks/use-toast';
 
 // Step components
 import PromptBuilderStepOne from './PromptBuilderStepOne';
@@ -17,59 +17,109 @@ const steps = [
   { id: 3, name: 'Refine Output' }
 ];
 
-const PromptBuilderStepper = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const { promptDetails, resetPromptBuilder } = usePromptBuilder();
-  const { toast } = useToast(); // Fix missing import
+const PromptBuilderStepper = ({ currentStep, formData, updateFormData, generatedPrompt }) => {
+  const [internalStep, setInternalStep] = useState(currentStep || 1);
+  const { toast } = useToast();
   
   const handleNext = () => {
     // Validate current step
-    if (currentStep === 1 && !promptDetails.purpose) {
+    if (internalStep === 1 && !formData.category) {
       toast({
         variant: "destructive",
-        title: "Purpose is required",
-        description: "Please define the purpose of your prompt before proceeding."
+        title: "Category is required",
+        description: "Please select a category before proceeding."
       });
       return;
     }
     
-    if (currentStep === 2 && !promptDetails.context) {
-      toast({
-        variant: "destructive",
-        title: "Context is required",
-        description: "Please add some context to your prompt before proceeding."
-      });
-      return;
+    if (internalStep === 2) {
+      // Validation depends on the category
+      if (formData.category === 'creative_writing' && 
+          (!formData.components.theme && !formData.components.character && !formData.components.setting)) {
+        toast({
+          variant: "destructive",
+          title: "Details required",
+          description: "Please add at least one detail before proceeding."
+        });
+        return;
+      } else if (formData.category === 'business' && 
+                (!formData.components.documentType && !formData.components.topic)) {
+        toast({
+          variant: "destructive",
+          title: "Details required",
+          description: "Please provide at least document type or topic before proceeding."
+        });
+        return;
+      } else if (formData.category === 'coding' && !formData.components.functionality) {
+        toast({
+          variant: "destructive",
+          title: "Functionality required",
+          description: "Please describe what the code should do before proceeding."
+        });
+        return;
+      } else if (!formData.category && !formData.goal) {
+        toast({
+          variant: "destructive",
+          title: "Context required",
+          description: "Please add some context to your prompt before proceeding."
+        });
+        return;
+      }
     }
     
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+    if (internalStep < steps.length) {
+      setInternalStep(internalStep + 1);
     }
   };
   
   const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (internalStep > 1) {
+      setInternalStep(internalStep - 1);
     }
   };
   
   const handleReset = () => {
-    resetPromptBuilder();
-    setCurrentStep(1);
+    // Reset form data by updating parent component
+    if (typeof updateFormData === 'function') {
+      // Reset category
+      updateFormData('category', '');
+      // Reset tone
+      updateFormData('tone', '');
+      // Reset audience
+      updateFormData('audience', '');
+      // Reset goal
+      updateFormData('goal', '');
+      // Reset components (this depends on the parent implementation)
+      Object.keys(formData.components || {}).forEach(key => {
+        updateFormData(`component.${key}`, '');
+      });
+    }
+    
+    // Reset step
+    setInternalStep(1);
+    
     toast({
       title: "Prompt builder reset",
       description: "All prompt details have been cleared."
     });
   };
   
-  const isStepComplete = (step: number) => {
+  const isStepComplete = (step) => {
     switch (step) {
       case 1:
-        return !!promptDetails.purpose;
+        return !!formData.category;
       case 2:
-        return !!promptDetails.context;
+        if (formData.category === 'creative_writing') {
+          return !!(formData.components.theme || formData.components.character || formData.components.setting);
+        } else if (formData.category === 'business') {
+          return !!(formData.components.documentType || formData.components.topic);
+        } else if (formData.category === 'coding') {
+          return !!formData.components.functionality;
+        } else {
+          return !!formData.goal;
+        }
       case 3:
-        return !!promptDetails.outputFormat;
+        return !!generatedPrompt;
       default:
         return false;
     }
@@ -85,10 +135,10 @@ const PromptBuilderStepper = () => {
               <button
                 onClick={() => {
                   // Only allow moving to steps that are already completed or the current one
-                  if (step.id < currentStep || (step.id === currentStep)) {
-                    setCurrentStep(step.id);
-                  } else if (isStepComplete(currentStep)) {
-                    setCurrentStep(step.id);
+                  if (step.id < internalStep || (step.id === internalStep)) {
+                    setInternalStep(step.id);
+                  } else if (isStepComplete(internalStep)) {
+                    setInternalStep(step.id);
                   } else {
                     toast({
                       variant: "destructive",
@@ -98,7 +148,7 @@ const PromptBuilderStepper = () => {
                   }
                 }}
                 className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                  step.id === currentStep
+                  step.id === internalStep
                     ? 'border-primary bg-primary text-primary-foreground'
                     : isStepComplete(step.id)
                     ? 'border-primary text-primary bg-background'
@@ -139,7 +189,7 @@ const PromptBuilderStepper = () => {
             <div key={step.id} className="text-center text-sm">
               <span
                 className={
-                  step.id === currentStep ? 'text-primary font-medium' : 'text-muted-foreground'
+                  step.id === internalStep ? 'text-primary font-medium' : 'text-muted-foreground'
                 }
               >
                 {step.name}
@@ -152,9 +202,9 @@ const PromptBuilderStepper = () => {
       {/* Current step content */}
       <Card>
         <CardContent className="pt-6">
-          {currentStep === 1 && <PromptBuilderStepOne />}
-          {currentStep === 2 && <PromptBuilderStepTwo />}
-          {currentStep === 3 && <PromptBuilderStepThree />}
+          {internalStep === 1 && <PromptBuilderStepOne />}
+          {internalStep === 2 && <PromptBuilderStepTwo />}
+          {internalStep === 3 && <PromptBuilderStepThree />}
         </CardContent>
         <Separator />
         <CardFooter className="flex justify-between pt-4">
@@ -164,12 +214,12 @@ const PromptBuilderStepper = () => {
             </Button>
           </div>
           <div className="flex space-x-2">
-            {currentStep > 1 && (
+            {internalStep > 1 && (
               <Button variant="outline" onClick={handlePrevious}>
                 Previous
               </Button>
             )}
-            {currentStep < steps.length ? (
+            {internalStep < steps.length ? (
               <Button onClick={handleNext}>Next</Button>
             ) : (
               <Button onClick={() => console.log("Complete")}>Complete</Button>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -5,10 +6,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'; // Changed imports
+  DialogTitle
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Library, RefreshCw } from 'lucide-react';
+import { Check, BookCheck, RefreshCw } from 'lucide-react';
 
 interface SavePromptDialogProps {
   open: boolean;
@@ -21,43 +22,44 @@ const SavePromptDialog: React.FC<SavePromptDialogProps> = ({
   open,
   onOpenChange,
   onGoToLibrary,
-  onStartNewPrompt,
+  onStartNewPrompt
 }) => {
-  const titleId = React.useId(); // Generate a unique ID for the title
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}> {/* Changed AlertDialog to Dialog */}
-      <DialogContent className="max-w-md" aria-labelledby={titleId}> {/* Added aria-labelledby */}
-        <DialogHeader> {/* Changed AlertDialogHeader to DialogHeader */}
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
-          <DialogTitle id={titleId} className="text-center text-xl mt-4"> {/* Added id */}
-            Prompt Saved Successfully!
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Check className="h-5 w-5 mr-2 text-green-500" />
+            Prompt Saved Successfully
           </DialogTitle>
-          <DialogDescription className="text-center"> {/* Changed AlertDialogDescription to DialogDescription */}
-            Your prompt has been saved to your library. What would you like to do next?
+          <DialogDescription>
+            Your prompt has been saved to your personal library.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="flex flex-col sm:flex-row gap-2"> {/* Changed AlertDialogFooter to DialogFooter */}
+        <div className="py-4">
+          <p className="text-sm text-muted-foreground">
+            You can access your saved prompts in your library at any time, or start creating a new prompt now.
+          </p>
+        </div>
+        <DialogFooter className="sm:justify-between">
           <Button
             variant="outline"
-            className="flex items-center justify-center gap-2 w-full"
             onClick={onStartNewPrompt}
+            className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
             Start New Prompt
           </Button>
           <Button
-            className="flex items-center justify-center gap-2 w-full"
             onClick={onGoToLibrary}
+            className="flex items-center gap-2"
           >
-            <Library className="h-4 w-4" />
+            <BookCheck className="h-4 w-4" />
             Go to Library
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog> // Changed AlertDialog to Dialog
+    </Dialog>
   );
 };
 
