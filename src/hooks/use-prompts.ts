@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Function to fetch prompts
   const fetchPrompts = async () => {
     setLoading(true);
     setError(null);
@@ -23,25 +21,20 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         .select('*')
         .order('created_at', { ascending: false });
       
-      // If user is logged in, fetch their prompts and public prompts
       if (user) {
         query = query.or(`user_id.eq.${user.id},is_public.eq.true`);
       } else {
-        // If user is not logged in, only fetch public prompts
         query = query.eq('is_public', true);
       }
       
-      // Apply category filter if provided
       if (category && category !== 'all') {
         query = query.eq('category', category);
       }
       
-      // Apply search term if provided
       if (searchTerm) {
         query = query.or(`title.ilike.%${searchTerm}%,text.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
       
-      // Apply tags filter if provided
       if (tags && tags.length > 0) {
         const tagConditions = tags.map(tag => `tags.cs.{${tag}}`);
         query = query.or(tagConditions.join(','));
@@ -53,12 +46,10 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         throw fetchError;
       }
       
-      // If user is not logged in, merge with local storage prompts
       if (!user) {
         const localPromptsString = localStorage.getItem('promptiverse_prompts');
         const localPrompts = localPromptsString ? JSON.parse(localPromptsString) : [];
         
-        // Filter local prompts based on category, search term, and tags
         let filteredLocalPrompts = [...localPrompts];
         
         if (category && category !== 'all') {
@@ -80,7 +71,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
           );
         }
         
-        // Combine server and local prompts
         setPrompts([...filteredLocalPrompts, ...(data || [])]);
       } else {
         setPrompts(data || []);
@@ -97,11 +87,9 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     }
   };
 
-  // Function to create a new prompt
   const createPrompt = async (promptData: Omit<Prompt, 'id' | 'created_at' | 'user_id' | 'updated_at'>) => {
     try {
       if (user) {
-        // Create prompt in Supabase
         const { data, error } = await supabase
           .from('prompts')
           .insert({
@@ -112,7 +100,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
           
         if (error) throw error;
         
-        // Update local state
         setPrompts(prev => [data[0], ...prev]);
         
         toast({
@@ -122,7 +109,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return data[0];
       } else {
-        // Store prompt in localStorage
         const id = `local-${Date.now()}`;
         const now = new Date().toISOString();
         const newPrompt = {
@@ -138,7 +124,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         localStorage.setItem('promptiverse_prompts', JSON.stringify([newPrompt, ...prompts]));
         
-        // Update local state
         setPrompts(prev => [newPrompt, ...prev]);
         
         toast({
@@ -158,11 +143,9 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     }
   };
 
-  // Function to update a prompt
   const updatePrompt = async (id: string, promptData: Partial<Prompt>) => {
     try {
       if (id.startsWith('local-')) {
-        // Update prompt in localStorage
         const existingPrompts = localStorage.getItem('promptiverse_prompts');
         const prompts = existingPrompts ? JSON.parse(existingPrompts) : [];
         
@@ -172,7 +155,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         localStorage.setItem('promptiverse_prompts', JSON.stringify(updatedPrompts));
         
-        // Update local state
         setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData, updated_at: new Date().toISOString() } : p));
         
         toast({
@@ -182,7 +164,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return { id, ...promptData, updated_at: new Date().toISOString() };
       } else {
-        // Update prompt in Supabase
         const { data, error } = await supabase
           .from('prompts')
           .update({
@@ -194,7 +175,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
           
         if (error) throw error;
         
-        // Update local state
         setPrompts(prev => prev.map(p => p.id === id ? { ...p, ...promptData, updated_at: new Date().toISOString() } : p));
         
         toast({
@@ -214,11 +194,9 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     }
   };
 
-  // Function to delete a prompt
   const deletePrompt = async (id: string) => {
     try {
       if (id.startsWith('local-')) {
-        // Delete prompt from localStorage
         const existingPrompts = localStorage.getItem('promptiverse_prompts');
         const prompts = existingPrompts ? JSON.parse(existingPrompts) : [];
         
@@ -226,7 +204,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         localStorage.setItem('promptiverse_prompts', JSON.stringify(filteredPrompts));
         
-        // Update local state
         setPrompts(prev => prev.filter(p => p.id !== id));
         
         toast({
@@ -235,7 +212,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
         
         return true;
       } else {
-        // Delete prompt from Supabase
         const { error } = await supabase
           .from('prompts')
           .delete()
@@ -243,7 +219,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
           
         if (error) throw error;
         
-        // Update local state
         setPrompts(prev => prev.filter(p => p.id !== id));
         
         toast({
@@ -262,7 +237,6 @@ export const usePrompts = (category?: string, searchTerm?: string, tags?: string
     }
   };
 
-  // Load prompts on component mount and when filters change
   useEffect(() => {
     fetchPrompts();
   }, [user, category, searchTerm, tags?.join(',')]);

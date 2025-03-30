@@ -15,6 +15,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import SearchPage from '@/pages/SearchPage';
 import LibraryPage from '@/pages/LibraryPage';
+import FavoritesPage from '@/pages/FavoritesPage';
 import CreatePromptPage from '@/pages/CreatePromptPage';
 import PromptBuilderPage from '@/pages/PromptBuilderPage';
 import CategoryManagementPage from '@/pages/CategoryManagementPage';
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "search", element: <SearchPage /> },
       { path: "library", element: <LibraryPage /> },
+      { path: "favorites", element: <FavoritesPage /> },
       { path: "create", element: <CreatePromptPage /> },
       { path: "builder", element: <PromptBuilderPage /> },
       { path: "categories", element: <CategoryManagementPage /> },
