@@ -27,14 +27,14 @@ const LoginPage = () => {
   const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');
     }
   }, [isAuthenticated, navigate]);
-  
+
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,14 +43,14 @@ const LoginPage = () => {
       password: '',
     },
   });
-  
+
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    
+
     try {
       const { error } = await signIn(values.email, values.password);
-      
+
       if (!error) {
         navigate('/');
       }
@@ -58,20 +58,20 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
-    <div className="container max-w-md mx-auto px-4 py-8">
+    <div className="w-full max-w-md px-4 sm:px-8 py-8 sm:py-12">
       <div className="text-center mb-8">
-        <div className="inline-block bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal rounded-xl p-2 mb-4">
-          <BookOpen className="h-8 w-8 text-white" />
+        <div className="inline-block bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal rounded-xl p-3 mb-6">
+          <BookOpen className="h-10 w-10 text-white" />
         </div>
-        <h1 className="text-3xl font-bold">Sign In to Promptiverse</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold tracking-tight">Sign In to Promptiverse</h1>
+        <p className="text-muted-foreground mt-3">
           Enter your details to access your account
         </p>
       </div>
-      
-      <div className="bg-card p-6 rounded-lg shadow-md">
+
+      <div className="bg-card p-8 rounded-xl shadow-lg border border-border/40">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -79,38 +79,51 @@ const LoginPage = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel className="text-sm font-medium">Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your email" type="email" {...field} />
+                    <Input
+                      placeholder="Enter your email"
+                      type="email"
+                      className="h-11"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-sm font-medium">Password</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="Enter your password" {...field} />
+                    <PasswordInput
+                      placeholder="Enter your password"
+                      className="h-11"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <Button type="submit" className="w-full" disabled={isLoading}>
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-medium"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Signing in...
                 </>
               ) : (
                 <>
-                  <LogIn className="mr-2 h-4 w-4" />
+                  <LogIn className="mr-2 h-5 w-5" />
                   Sign In
                 </>
               )}
@@ -118,11 +131,11 @@ const LoginPage = () => {
           </form>
         </Form>
       </div>
-      
-      <div className="text-center mt-6">
+
+      <div className="text-center mt-8">
         <p className="text-muted-foreground">
           Don't have an account?{' '}
-          <Link to="/signup" className="text-primary hover:underline">
+          <Link to="/signup" className="text-primary font-medium hover:underline">
             Create one now
           </Link>
         </p>

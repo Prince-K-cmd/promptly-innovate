@@ -5,8 +5,11 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HelmetProvider } from 'react-helmet-async';
 
-// Pages
+// Layouts
 import Index from '@/pages/Index';
+import AuthLayout from '@/components/AuthLayout';
+
+// Pages
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
@@ -32,13 +35,20 @@ const queryClient = new QueryClient({
 
 // Define routes
 const router = createBrowserRouter([
+  // Auth routes (no header/footer)
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: "login", element: <LoginPage /> },
+      { path: "signup", element: <SignupPage /> },
+    ],
+  },
+  // Main app routes (with header/footer)
   {
     path: "/",
     element: <Index />,
     children: [
       { path: "", element: <HomePage /> },
-      { path: "login", element: <LoginPage /> },
-      { path: "signup", element: <SignupPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "search", element: <SearchPage /> },
