@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,64 @@ import PromptCard from '@/components/PromptCard';
 import PromptListItem from '@/components/PromptListItem';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
-import { Prompt } from '@/lib/supabase';
+import { Prompt, Category } from '@/lib/supabase';
 import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart, Grid, List } from 'lucide-react';
 import { eventEmitter, EVENTS } from '@/lib/events';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+
+// Helper function to render prompts in grid or list view
+const renderPromptList = (
+  prompts: Prompt[],
+  viewMode: 'grid' | 'list',
+  handleEditPrompt: (prompt: Prompt) => void,
+  handleDeletePrompt: (id: string) => void
+): ReactNode => {
+  if (viewMode === 'grid') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {prompts.map(prompt => (
+          <PromptCard
+            key={prompt.id}
+            prompt={prompt}
+            onEdit={handleEditPrompt}
+            onDelete={handleDeletePrompt}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col space-y-4">
+      {prompts.map(prompt => (
+        <PromptListItem
+          key={prompt.id}
+          prompt={prompt}
+          onEdit={handleEditPrompt}
+          onDelete={handleDeletePrompt}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Helper function to render empty state message
+const renderEmptyState = (
+  title: string,
+  message: ReactNode,
+  navigate: (path: string) => void
+): ReactNode => {
+  return (
+    <div className="text-center py-16 bg-muted/30 rounded-lg">
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-muted-foreground mb-6">{message}</p>
+      <Button onClick={() => navigate('/create')}>
+        <PlusCircle className="mr-2 h-5 w-5" />
+        Create a Prompt
+      </Button>
+    </div>
+  );
+};
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -46,10 +99,8 @@ const LibraryPage = () => {
   const {
     prompts,
     loading,
-    createPrompt,
     updatePrompt,
     deletePrompt,
-    refreshPrompts
   } = usePrompts(
     selectedCategory === 'All' ? undefined : selectedCategory,
     searchTerm,
@@ -170,7 +221,7 @@ const LibraryPage = () => {
   };
 
   // Handle update prompt
-  const handleUpdatePrompt = async (values: any) => {
+  const handleUpdatePrompt = async (values: Omit<Prompt, 'id' | 'created_at' | 'user_id' | 'updated_at'>) => {
     if (editingPrompt) {
       await updatePrompt(editingPrompt.id, values);
       setIsDialogOpen(false);
@@ -191,9 +242,6 @@ const LibraryPage = () => {
     setCurrentTab(value);
   };
 
-  // Get the current display prompts based on active tab
-  const displayPrompts = currentTab === 'favorites' ? favoritePrompts : prompts;
-  const isLoading = currentTab === 'favorites' ? favoritesLoading : loading;
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -256,7 +304,7 @@ const LibraryPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Categories</SelectItem>
-                  {categories.map(category => (
+                  {categories.map((category: Category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
@@ -377,110 +425,70 @@ const LibraryPage = () => {
 
         {/* Tab Content */}
         <TabsContent value="all">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-              <p className="text-muted-foreground">Loading prompts...</p>
-            </div>
-          ) : prompts.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {prompts.map(prompt => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEditPrompt}
-                    onDelete={handleDeletePrompt}
-                  />
-                ))}
-              </div>
+          {(() => {
+            // Loading state
+            if (loading) {
+              return (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+                  <p className="text-muted-foreground">Loading prompts...</p>
+                </div>
+              );
+            }
+
+            // Has prompts
+            if (prompts.length > 0) {
+              return renderPromptList(prompts, viewMode, handleEditPrompt, handleDeletePrompt);
+            }
+
+            // No prompts found
+            const noPromptsMessage = searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
+              <>
+                No prompts match your search filters.
+                <Button variant="link" onClick={clearFilters}>
+                  Clear all filters
+                </Button>
+              </>
             ) : (
-              <div className="flex flex-col space-y-4">
-                {prompts.map(prompt => (
-                  <PromptListItem
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEditPrompt}
-                    onDelete={handleDeletePrompt}
-                  />
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="text-center py-16 bg-muted/30 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">No prompts found</h3>
-              <p className="text-muted-foreground mb-6">
-                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
-                  <>
-                    No prompts match your search filters.
-                    <Button variant="link" onClick={clearFilters}>
-                      Clear all filters
-                    </Button>
-                  </>
-                ) : (
-                  "Create your first prompt to get started!"
-                )}
-              </p>
-              <Button onClick={() => navigate('/create')}>
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Create a Prompt
-              </Button>
-            </div>
-          )}
+              "Create your first prompt to get started!"
+            );
+
+            return renderEmptyState("No prompts found", noPromptsMessage, navigate);
+          })()}
         </TabsContent>
 
         <TabsContent value="favorites">
-          {favoritesLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-              <p className="text-muted-foreground">Loading favorites...</p>
-            </div>
-          ) : favoritePrompts.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favoritePrompts.map(prompt => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEditPrompt}
-                    onDelete={handleDeletePrompt}
-                  />
-                ))}
-              </div>
+          {(() => {
+            // Loading state
+            if (favoritesLoading) {
+              return (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+                  <p className="text-muted-foreground">Loading favorites...</p>
+                </div>
+              );
+            }
+
+            // Has favorite prompts
+            if (favoritePrompts.length > 0) {
+              return renderPromptList(favoritePrompts, viewMode, handleEditPrompt, handleDeletePrompt);
+            }
+
+            // No favorites found
+            const noFavoritesTitle = searchTerm || selectedCategory !== 'All' || activeTags.length > 0
+              ? "No favorites match your filters"
+              : "No favorite prompts yet";
+
+            const noFavoritesMessage = searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
+              <>
+                Try different filters or <Button variant="link" className="px-0 py-0 h-auto" onClick={clearFilters}>clear all filters</Button>.
+              </>
             ) : (
-              <div className="flex flex-col space-y-4">
-                {favoritePrompts.map(prompt => (
-                  <PromptListItem
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEditPrompt}
-                    onDelete={handleDeletePrompt}
-                  />
-                ))}
-              </div>
-            )
-          ) : (
-            <div className="text-center py-16 bg-muted/30 rounded-lg">
-              <h3 className="text-xl font-semibold mb-2">
-                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0
-                  ? "No favorites match your filters"
-                  : "No favorite prompts yet"}
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                {searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
-                  <>
-                    Try different filters or <Button variant="link" className="px-0 py-0 h-auto" onClick={clearFilters}>clear all filters</Button>.
-                  </>
-                ) : (
-                  "Add prompts to your favorites by clicking the heart icon."
-                )}
-              </p>
-              <Button onClick={() => navigate('/create')}>
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Create a Prompt
-              </Button>
-            </div>
-          )}
+              "Add prompts to your favorites by clicking the heart icon."
+            );
+
+            return renderEmptyState(noFavoritesTitle, noFavoritesMessage, navigate);
+          })()}
         </TabsContent>
       </Tabs>
 
