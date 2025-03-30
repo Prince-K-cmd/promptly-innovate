@@ -11,13 +11,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrompts } from '@/hooks/use-prompts';
+import { useFavorites } from '@/hooks/use-favorites';
 import { useCategories } from '@/hooks/use-categories';
 import PromptCard from '@/components/PromptCard';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt } from '@/lib/supabase';
-import { Search, PlusCircle, Filter, X, Loader2, Settings } from 'lucide-react';
+import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart } from 'lucide-react';
 
 const LibraryPage = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const LibraryPage = () => {
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentTab, setCurrentTab] = useState('all');
   
   // Get categories
   const { categories } = useCategories();
@@ -43,6 +46,20 @@ const LibraryPage = () => {
     searchTerm,
     activeTags.length > 0 ? activeTags : undefined
   );
+
+  // Get favorites
+  const { favorites, loading: favoritesLoading } = useFavorites();
+  
+  // Filter prompts that are in favorites
+  const favoritePrompts = React.useMemo(() => {
+    if (favorites.length === 0) return [];
+    
+    // Extract favorite prompt IDs
+    const favoriteIds = favorites.map(fav => fav.prompt_id);
+    
+    // Filter prompts that match favorite IDs
+    return prompts.filter(prompt => favoriteIds.includes(prompt.id));
+  }, [prompts, favorites]);
   
   // Get unique tags from prompts
   const allTags = React.useMemo(() => {
@@ -100,6 +117,15 @@ const LibraryPage = () => {
       setEditingPrompt(null);
     }
   };
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value);
+  };
+  
+  // Get the current display prompts based on active tab
+  const displayPrompts = currentTab === 'favorites' ? favoritePrompts : prompts;
+  const isLoading = currentTab === 'favorites' ? favoritesLoading : loading;
   
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -132,6 +158,17 @@ const LibraryPage = () => {
           Manage Categories
         </Button>
       </div>
+      
+      {/* Tabs */}
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="mb-6">
+        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
+          <TabsTrigger value="all">All Prompts</TabsTrigger>
+          <TabsTrigger value="favorites" className="flex items-center gap-1">
+            <Heart className="h-4 w-4" />
+            Favorites
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       
       {/* Search and Filters */}
       <div className="mb-8 space-y-4">
@@ -197,43 +234,51 @@ const LibraryPage = () => {
       </div>
       
       {/* Prompts Grid */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-          <p className="text-muted-foreground">Loading prompts...</p>
-        </div>
-      ) : prompts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {prompts.map(prompt => (
-            <PromptCard 
-              key={prompt.id} 
-              prompt={prompt}
-              onEdit={handleEditPrompt}
-              onDelete={handleDeletePrompt}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-muted/30 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">No prompts found</h3>
-          <p className="text-muted-foreground mb-6">
-            {searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
-              <>
-                No prompts match your search filters.
-                <Button variant="link" onClick={clearFilters}>
-                  Clear all filters
-                </Button>
-              </>
-            ) : (
-              "Create your first prompt to get started!"
-            )}
-          </p>
-          <Button onClick={() => navigate('/create')}>
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Create a Prompt
-          </Button>
-        </div>
-      )}
+      <TabsContent value={currentTab} className="mt-0">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+            <p className="text-muted-foreground">Loading prompts...</p>
+          </div>
+        ) : displayPrompts.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayPrompts.map(prompt => (
+              <PromptCard 
+                key={prompt.id} 
+                prompt={prompt}
+                onEdit={handleEditPrompt}
+                onDelete={handleDeletePrompt}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-muted/30 rounded-lg">
+            <h3 className="text-xl font-semibold mb-2">
+              {currentTab === 'favorites' ? 'No favorite prompts yet' : 'No prompts found'}
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              {currentTab === 'favorites' ? (
+                <>
+                  Add prompts to your favorites by clicking the heart icon.
+                </>
+              ) : searchTerm || selectedCategory !== 'All' || activeTags.length > 0 ? (
+                <>
+                  No prompts match your search filters.
+                  <Button variant="link" onClick={clearFilters}>
+                    Clear all filters
+                  </Button>
+                </>
+              ) : (
+                "Create your first prompt to get started!"
+              )}
+            </p>
+            <Button onClick={() => navigate('/create')}>
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Create a Prompt
+            </Button>
+          </div>
+        )}
+      </TabsContent>
       
       {/* Edit Prompt Dialog */}
       {editingPrompt && (

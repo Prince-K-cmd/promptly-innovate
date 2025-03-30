@@ -1,3 +1,4 @@
+
 // AI Service Types
 export interface AISuggestion {
   type: string;
