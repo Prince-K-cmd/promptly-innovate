@@ -93,13 +93,13 @@ export function useAIServices() {
         // Show toast only for specific errors that might need user attention
         if (error.message.includes('API key') || error.message.includes('authentication')) {
           toast({
-            variant: "warning",
+            variant: "default",
             title: `${provider} API Key Issue`,
             description: `There may be an issue with your ${provider} API key. Please check your settings.`,
           });
         } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
           toast({
-            variant: "warning",
+            variant: "default",
             title: `Rate Limit Exceeded`,
             description: `${provider} API rate limit exceeded. Please wait a moment before trying again.`,
           });
@@ -206,13 +206,13 @@ export function useAIServices() {
         // Show toast only for specific errors that might need user attention
         if (error.message.includes('API key') || error.message.includes('authentication')) {
           toast({
-            variant: "warning",
+            variant: "default",
             title: `${provider} API Key Issue`,
             description: `There may be an issue with your ${provider} API key. Please check your settings.`,
           });
         } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
           toast({
-            variant: "warning",
+            variant: "default",
             title: `Rate Limit Exceeded`,
             description: `${provider} API rate limit exceeded. Please wait a moment before trying again.`,
           });
@@ -230,7 +230,7 @@ export function useAIServices() {
     const availableProviders = getAvailableProviders();
     if (availableProviders.length === 0) {
       toast({
-        variant: "warning",
+        variant: "default",
         title: "No AI providers available",
         description: "Add an API key in settings to enable AI-generated prompts.",
       });
@@ -299,7 +299,7 @@ export function useAIServices() {
 
       if (!apiKey) {
         toast({
-          variant: "warning",
+          variant: "default",
           title: `No ${provider} API key found`,
           description: `Add a ${provider} API key in settings to use this provider.`,
         });
@@ -310,7 +310,7 @@ export function useAIServices() {
 
       if (!service) {
         toast({
-          variant: "warning",
+          variant: "default",
           title: `Unsupported provider: ${provider}`,
           description: "This AI provider is not supported.",
         });
@@ -319,7 +319,7 @@ export function useAIServices() {
 
       if ((type === 'prompt' || type === 'test') && !service.generatePrompt) {
         toast({
-          variant: "warning",
+          variant: "default",
           title: `Prompt generation not supported`,
           description: `${provider} does not support prompt generation.`,
         });

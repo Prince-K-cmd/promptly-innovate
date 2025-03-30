@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { PromptBuilderFormData, usePromptBuilder } from '@/hooks/use-prompt-builder';
 import { useAIServices } from '@/hooks/use-ai-services';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface PromptBuilderStepperProps {
   currentStep: number;
@@ -24,13 +24,13 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
 }) => {
   const { useSnippets } = usePromptBuilder();
   const { generateWithProvider, getAvailableProviders } = useAIServices();
+  const { toast } = useToast();
 
   const [sampleInput, setSampleInput] = useState('');
   const [aiOutput, setAiOutput] = useState('');
   const [isTestingPrompt, setIsTestingPrompt] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
-  // Set default provider when available providers change
   const availableProviders = getAvailableProviders();
   React.useEffect(() => {
     if (availableProviders.length > 0 && !selectedProvider) {
@@ -38,7 +38,6 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
     }
   }, [availableProviders, selectedProvider]);
 
-  // Helper function to get step style
   const getStepStyle = (currentStep: number, step: number): string => {
     if (currentStep === step) {
       return 'bg-primary text-primary-foreground';
@@ -49,11 +48,10 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
     }
   };
 
-  // Handle testing the prompt with AI
   const handleTestPrompt = async () => {
     if (!selectedProvider || !sampleInput || !generatedPrompt) {
       toast({
-        variant: "warning",
+        variant: "destructive",
         title: "Missing information",
         description: "Please select an AI provider, enter sample input, and generate a prompt first.",
       });
@@ -68,10 +66,8 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
       console.log('Prompt:', generatedPrompt);
       console.log('Sample input:', sampleInput);
 
-      // Create a combined prompt with the generated prompt and sample input
       const combinedPrompt = `${generatedPrompt}\n\nInput: ${sampleInput}`;
 
-      // Call the AI service with the combined prompt
       const result = await generateWithProvider(
         selectedProvider,
         {
@@ -101,7 +97,6 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
     }
   };
 
-  // Get snippets based on current category
   const { data: introSnippets } = useSnippets(formData.category, 'intro');
   const { data: contextSnippets } = useSnippets(formData.category, 'context');
   const { data: instructionSnippets } = useSnippets(formData.category, 'instruction');
@@ -387,7 +382,6 @@ const PromptBuilderStepper: React.FC<PromptBuilderStepperProps> = ({
         );
 
       case 3: {
-        // Render the playground UI
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">4. Prompt Playground</h2>
