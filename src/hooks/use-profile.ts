@@ -68,18 +68,30 @@ export const useProfile = () => {
     try {
       // Upload the image
       const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user.id}/${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`;
+      // Ensure path follows the format expected by the RLS policy: avatars/{user_id}/{filename}
+      const filePath = `${user.id}/${fileName}`;
+
+      console.log("Uploading to path:", filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error details:", uploadError);
+        throw uploadError;
+      }
 
       // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+
+      console.log("Public URL generated:", publicUrl);
 
       // Update the profile with the new avatar URL
       const { data, error: updateError } = await supabase
@@ -88,7 +100,10 @@ export const useProfile = () => {
         .eq('id', user.id)
         .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        throw updateError;
+      }
 
       toast({
         title: "Avatar updated",
@@ -97,6 +112,7 @@ export const useProfile = () => {
 
       return data?.[0] || null;
     } catch (error: any) {
+      console.error("Avatar upload error:", error);
       toast({
         variant: "destructive",
         title: "Failed to update avatar",
