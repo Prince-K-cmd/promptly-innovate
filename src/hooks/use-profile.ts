@@ -69,7 +69,7 @@ export const useProfile = () => {
       // Upload the image
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).slice(2)}.${fileExt}`;
-      // Ensure path follows the format expected by the RLS policy: avatars/{user_id}/{filename}
+      // The path must be user_id/filename to match the RLS policy
       const filePath = `${user.id}/${fileName}`;
 
       console.log("Uploading to path:", filePath);
