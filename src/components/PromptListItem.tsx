@@ -212,7 +212,7 @@ const PromptListItem: React.FC<PromptListItemProps> = ({
           </Button>
         </div>
 
-        {prompt.tags && prompt.tags.map(tag => (
+        {prompt.tags?.map(tag => (
           <Badge
             key={tag}
             variant="secondary"
