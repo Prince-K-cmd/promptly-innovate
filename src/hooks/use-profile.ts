@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const useProfile = () => {
-  const { user, profile: authProfile } = useAuth();
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -34,6 +34,9 @@ export const useProfile = () => {
         .select();
 
       if (error) throw error;
+
+      // Refresh the profile in AuthContext
+      await refreshProfile();
 
       toast({
         title: "Profile updated",
@@ -104,6 +107,9 @@ export const useProfile = () => {
         console.error("Profile update error:", updateError);
         throw updateError;
       }
+
+      // Refresh the profile in AuthContext to update UI immediately
+      await refreshProfile();
 
       toast({
         title: "Avatar updated",

@@ -4,22 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
 } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -45,7 +44,7 @@ const ProfilePage = () => {
   const { toast } = useToast();
   const [isAvatarLoading, setIsAvatarLoading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Initialize form with user's current profile data
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -56,24 +55,24 @@ const ProfilePage = () => {
       website: profile?.website || '',
     },
   });
-  
+
   // Redirect if not logged in
   React.useEffect(() => {
     if (!user) {
       navigate('/login', { replace: true });
     }
   }, [user, navigate]);
-  
+
   // Handle profile form submission
   const onSubmit = async (values: ProfileFormValues) => {
     await updateProfile(values);
   };
-  
+
   // Handle avatar upload
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     // File size check (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -83,7 +82,7 @@ const ProfilePage = () => {
       });
       return;
     }
-    
+
     // File type check
     if (!file.type.startsWith('image/')) {
       toast({
@@ -93,17 +92,22 @@ const ProfilePage = () => {
       });
       return;
     }
-    
+
     setIsAvatarLoading(true);
     try {
+      // This will update the profile in the AuthContext
       await uploadAvatar(file);
+      // Reset the file input
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
     } catch (error) {
       console.error('Avatar upload failed:', error);
     } finally {
       setIsAvatarLoading(false);
     }
   };
-  
+
   // Get initials for avatar fallback
   const getInitials = () => {
     if (profile?.full_name) {
@@ -114,13 +118,13 @@ const ProfilePage = () => {
     }
     return 'PV';
   };
-  
+
   if (!user || !profile) return null;
-  
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-3xl">
       <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         {/* Avatar Card */}
         <Card className="md:col-span-1 flex flex-col items-center justify-start py-8">
@@ -129,9 +133,9 @@ const ProfilePage = () => {
               <AvatarImage src={profile.avatar_url} alt={profile.username} />
               <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
             </Avatar>
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Button
+              variant="outline"
+              size="icon"
               className="absolute bottom-0 right-0 rounded-full h-8 w-8 bg-background"
               onClick={() => avatarInputRef.current?.click()}
               disabled={isAvatarLoading}
@@ -142,21 +146,22 @@ const ProfilePage = () => {
                 <Camera className="h-4 w-4" />
               )}
             </Button>
-            <input 
-              type="file" 
-              ref={avatarInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              ref={avatarInputRef}
+              className="hidden"
               accept="image/*"
               onChange={handleAvatarUpload}
+              aria-label="Upload profile picture"
             />
           </div>
-          
+
           <div className="text-center mt-4">
             <h3 className="font-semibold text-lg">{profile.full_name || profile.username}</h3>
             {profile.username && <p className="text-muted-foreground">@{profile.username}</p>}
           </div>
         </Card>
-        
+
         {/* Profile Form Card */}
         <Card className="md:col-span-2">
           <CardHeader>
@@ -181,7 +186,7 @@ const ProfilePage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="full_name"
@@ -195,7 +200,7 @@ const ProfilePage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="bio"
@@ -203,8 +208,8 @@ const ProfilePage = () => {
                     <FormItem>
                       <FormLabel>Bio</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          {...field} 
+                        <Textarea
+                          {...field}
                           placeholder="Tell others a bit about yourself"
                           className="resize-none"
                           rows={4}
@@ -217,7 +222,7 @@ const ProfilePage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="website"
@@ -231,7 +236,7 @@ const ProfilePage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex justify-end">
                   <Button type="submit" disabled={loading}>
                     {loading ? (

@@ -11,6 +11,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
 };
@@ -29,10 +30,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Initialize authListener first to avoid race conditions
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log("Auth state changed:", event, currentSession?.user?.id);
-      
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      
+
       // If user is available, fetch profile data
       if (currentSession?.user) {
         // Use setTimeout to prevent potential deadlocks
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               .select('*')
               .eq('id', currentSession.user.id)
               .single();
-              
+
             if (profileData) {
               setProfile(profileData);
             }
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setProfile(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -62,19 +63,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const getSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (!error && data.session) {
           console.log("Existing session found:", data.session.user.id);
           setSession(data.session);
           setUser(data.session.user);
-          
+
           // Fetch user profile
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', data.session.user.id)
             .single();
-            
+
           if (profileData) {
             setProfile(profileData);
           }
@@ -97,24 +98,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string) => {
     setLoading(true);
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
-    
+
     if (!error && data.user) {
       // Create a profile entry with default avatar
       const username = email.split('@')[0];
-      
+
       await supabase.from('profiles').insert([
-        { 
-          id: data.user.id, 
+        {
+          id: data.user.id,
           username,
           avatar_url: `https://api.dicebear.com/7.x/identicon/svg?seed=${username}`,
         }
       ]);
-      
+
       toast({
         title: "Account created successfully",
         description: "Please check your email to confirm your account",
@@ -126,19 +127,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: error?.message,
       });
     }
-    
+
     setLoading(false);
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) {
       toast({
         variant: "destructive",
@@ -149,13 +150,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       toast({
         title: "Signed in successfully",
       });
-      
+
       // Sync local storage prompts if any
       const localPrompts = localStorage.getItem('promptiverse_prompts');
       if (localPrompts) {
         try {
           const parsedPrompts = JSON.parse(localPrompts);
-          
+
           for (const prompt of parsedPrompts) {
             await supabase.from('prompts').insert({
               ...prompt,
@@ -163,10 +164,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               synced_from_local: true,
             });
           }
-          
+
           // Clear local storage after sync
           localStorage.removeItem('promptiverse_prompts');
-          
+
           toast({
             title: "Local prompts synced",
             description: `${parsedPrompts.length} prompts have been added to your account.`,
@@ -176,7 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     }
-    
+
     setLoading(false);
     return { error };
   };
@@ -190,6 +191,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  // Function to refresh the profile data
+  const refreshProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error("Error refreshing profile:", error);
+        return;
+      }
+
+      if (profileData) {
+        console.log("Profile refreshed:", profileData);
+        setProfile(profileData);
+      }
+    } catch (error) {
+      console.error("Error refreshing profile:", error);
+    }
+  };
+
   const value = {
     session,
     user,
@@ -197,6 +223,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp,
     signIn,
     signOut,
+    refreshProfile,
     loading,
     isAuthenticated: !!user,
   };

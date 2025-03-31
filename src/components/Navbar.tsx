@@ -3,12 +3,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Menu, LogIn, User, BookOpen, LogOut, Settings, Wand2 } from 'lucide-react';
@@ -23,6 +23,13 @@ const Navbar = () => {
   const isAuthenticated = auth?.isAuthenticated ?? false;
   const profile = auth?.profile ?? null;
   const signOut = auth?.signOut ?? (() => { console.error("SignOut function not available"); return Promise.resolve(); });
+
+  // Ensure we're using the latest profile data
+  React.useEffect(() => {
+    if (isAuthenticated && auth.refreshProfile) {
+      auth.refreshProfile();
+    }
+  }, [isAuthenticated, auth]);
 
   // Get user initials for avatar fallback
   const getInitials = () => {
@@ -81,7 +88,7 @@ const Navbar = () => {
           <Link to="/search" className="hidden md:flex text-muted-foreground hover:text-foreground transition-colors">
             <Search className="h-5 w-5" />
           </Link>
-          
+
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -125,7 +132,7 @@ const Navbar = () => {
               </Link>
             </Button>
           )}
-          
+
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
