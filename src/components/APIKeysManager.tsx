@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Key, Eye, EyeOff, Plus, Lock, Pencil } from 'lucide-react';
+import { Trash2, Key, Eye, EyeOff, Lock, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiKeys, APIKey, APIKeyInput } from '@/hooks/use-api-keys';
 
@@ -28,6 +28,81 @@ const APIKeysManager = () => {
   const { apiKeys, loading, addApiKey, updateApiKey, deleteApiKey } = useApiKeys();
   const [showingKeys, setShowingKeys] = useState<Record<string, boolean>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
+
+  // Helper function to render API keys content based on loading state and data
+  const renderApiKeysContent = () => {
+    if (loading) {
+      return <div className="text-center py-4">Loading your API keys...</div>;
+    }
+
+    if (apiKeys.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>You haven't added any API keys yet.</p>
+          <p className="text-sm mt-2">Add your first API key using the form above.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {apiKeys.map((apiKey) => (
+          <div
+            key={apiKey.id}
+            className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-md"
+          >
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{apiKey.name}</span>
+                <Badge variant="outline" className="text-xs">
+                  {apiKey.provider}
+                </Badge>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <span className="font-mono">
+                  {showingKeys[apiKey.id]
+                    ? apiKey.key
+                    : apiKey.key.substring(0, 3) + "..." + apiKey.key.substring(apiKey.key.length - 4)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 ml-1"
+                  onClick={() => toggleKeyVisibility(apiKey.id)}
+                >
+                  {showingKeys[apiKey.id] ? (
+                    <EyeOff className="h-3 w-3" />
+                  ) : (
+                    <Eye className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Added on {new Date(apiKey.created_at).toLocaleDateString()}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-3 sm:mt-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => startEditing(apiKey)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => handleDeleteKey(apiKey.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const form = useForm<APIKeyFormValues>({
     resolver: zodResolver(apiKeyFormSchema),
@@ -69,7 +144,7 @@ const APIKeysManager = () => {
 
   const onSubmit = async (values: APIKeyFormValues) => {
     if (!user) return;
-    
+
     try {
       if (editingKey) {
         // Pass values as APIKeyInput with all required fields
@@ -79,17 +154,18 @@ const APIKeysManager = () => {
         // Create new key
         await addApiKey(values as APIKeyInput);
       }
-      
+
       form.reset({
         name: "",
         provider: "openai",
         key: "",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       toast({
         variant: "destructive",
         title: "Failed to save API key",
-        description: error.message || "An unexpected error occurred",
+        description: errorMessage,
       });
     }
   };
@@ -125,7 +201,7 @@ const APIKeysManager = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="provider"
@@ -154,7 +230,7 @@ const APIKeysManager = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="key"
@@ -163,9 +239,9 @@ const APIKeysManager = () => {
                     <FormLabel>API Key</FormLabel>
                     <FormControl>
                       <Input
-                        type="password" 
-                        placeholder="sk-..." 
-                        {...field} 
+                        type="password"
+                        placeholder="sk-..."
+                        {...field}
                       />
                     </FormControl>
                     <FormDescription>
@@ -175,11 +251,11 @@ const APIKeysManager = () => {
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-end space-x-2 pt-2">
                 {editingKey && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     type="button"
                     onClick={cancelEditing}
                   >
@@ -194,7 +270,7 @@ const APIKeysManager = () => {
           </Form>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -206,71 +282,7 @@ const APIKeysManager = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-4">Loading your API keys...</div>
-          ) : apiKeys.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>You haven't added any API keys yet.</p>
-              <p className="text-sm mt-2">Add your first API key using the form above.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {apiKeys.map((apiKey) => (
-                <div 
-                  key={apiKey.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-md"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{apiKey.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {apiKey.provider}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <span className="font-mono">
-                        {showingKeys[apiKey.id] 
-                          ? apiKey.key 
-                          : apiKey.key.substring(0, 3) + "..." + apiKey.key.substring(apiKey.key.length - 4)}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 ml-1"
-                        onClick={() => toggleKeyVisibility(apiKey.id)}
-                      >
-                        {showingKeys[apiKey.id] ? (
-                          <EyeOff className="h-3 w-3" />
-                        ) : (
-                          <Eye className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Added on {new Date(apiKey.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-3 sm:mt-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => startEditing(apiKey)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteKey(apiKey.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {renderApiKeysContent()}
         </CardContent>
       </Card>
     </div>
