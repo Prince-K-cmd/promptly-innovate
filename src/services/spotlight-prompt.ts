@@ -47,15 +47,28 @@ function generateRandomPromptRequest(): AIPromptRequest {
   };
 }
 
+// Generate a title from the prompt text
+function generateTitle(text: string): string {
+  // Extract first sentence or first 50 characters
+  const firstSentence = text.split(/[.!?]\s/)[0];
+  const title = firstSentence.length > 50
+    ? firstSentence.substring(0, 47) + '...'
+    : firstSentence;
+
+  // Capitalize first letter
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
 // Create a prompt object from generated text
 function createPromptObject(text: string): Prompt {
   const now = new Date().toISOString();
   const randomCategory = SPOTLIGHT_CATEGORIES[Math.floor(Math.random() * SPOTLIGHT_CATEGORIES.length)];
-  
+  const title = generateTitle(text);
+
   return {
     id: 'spotlight-' + Date.now(),
     user_id: 'system',
-    title: 'Spotlight Prompt',
+    title: title,
     text: text,
     category: randomCategory,
     tags: ['spotlight', 'featured', randomCategory],
@@ -72,7 +85,7 @@ function getFallbackPrompt(): Prompt {
   return {
     id: 'spotlight-fallback',
     user_id: 'system',
-    title: 'Spotlight Prompt',
+    title: 'Explain Complex Concepts Simply',
     text: 'Describe a complex concept in simple terms that a 10-year-old would understand. Focus on using analogies and everyday examples to make the concept relatable and engaging.',
     category: 'general',
     tags: ['spotlight', 'featured', 'general'],
@@ -94,12 +107,12 @@ async function getApiKeys(): Promise<{ provider: string, key: string }[]> {
     const { data, error } = await supabase
       .from('api_keys')
       .select('provider, key');
-    
+
     if (error) {
       console.error('Error fetching API keys:', error);
       return [];
     }
-    
+
     return data || [];
   } catch (error) {
     console.error('Error in getApiKeys:', error);
@@ -119,7 +132,7 @@ export async function getSpotlightPrompt(): Promise<Prompt> {
         return parsedCache.prompt;
       }
     }
-    
+
     // Get API keys
     const apiKeys = await getApiKeys();
     if (apiKeys.length === 0) {
@@ -128,16 +141,16 @@ export async function getSpotlightPrompt(): Promise<Prompt> {
       cachePrompt(fallbackPrompt);
       return fallbackPrompt;
     }
-    
+
     // Try each available AI service until one succeeds
     for (const apiKey of apiKeys) {
       try {
         const service = createAIService(apiKey.provider, { apiKey: apiKey.key });
-        if (!service || !service.generatePrompt) continue;
-        
+        if (!service?.generatePrompt) continue;
+
         const promptRequest = generateRandomPromptRequest();
         const generatedText = await service.generatePrompt(promptRequest);
-        
+
         if (generatedText) {
           const prompt = createPromptObject(generatedText);
           cachePrompt(prompt);
@@ -148,7 +161,7 @@ export async function getSpotlightPrompt(): Promise<Prompt> {
         // Continue to next provider
       }
     }
-    
+
     // If all providers fail, use fallback
     const fallbackPrompt = getFallbackPrompt();
     cachePrompt(fallbackPrompt);
