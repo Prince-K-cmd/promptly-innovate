@@ -35,8 +35,8 @@ export const useProfile = () => {
 
       if (error) throw error;
 
-      // Refresh the profile in AuthContext
-      await refreshProfile();
+      // Refresh the profile in AuthContext with force=true to ensure it updates
+      await refreshProfile(true);
 
       toast({
         title: "Profile updated",
@@ -108,8 +108,8 @@ export const useProfile = () => {
         throw updateError;
       }
 
-      // Refresh the profile in AuthContext to update UI immediately
-      await refreshProfile();
+      // Refresh the profile in AuthContext to update UI immediately with force=true
+      await refreshProfile(true);
 
       toast({
         title: "Avatar updated",

@@ -4,14 +4,27 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Define a Profile interface
+interface Profile {
+  id: string;
+  username: string;
+  full_name?: string;
+  bio?: string;
+  website?: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any; // Allow for additional properties
+}
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: Profile | null;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (force?: boolean) => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
 };
@@ -22,8 +35,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastProfileRefresh, setLastProfileRefresh] = useState<number>(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -90,9 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     getSession();
 
     return () => {
-      if (authListener && authListener.subscription) {
-        authListener.subscription.unsubscribe();
-      }
+      authListener?.subscription?.unsubscribe();
     };
   }, []);
 
@@ -192,10 +204,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Function to refresh the profile data
-  const refreshProfile = async () => {
+  const refreshProfile = async (force = false) => {
     if (!user) return;
 
+    // Prevent excessive refreshes by checking the time since last refresh
+    // Only refresh if forced or if it's been more than 2 seconds since the last refresh
+    const now = Date.now();
+    if (!force && now - lastProfileRefresh < 2000) {
+      console.log("Skipping profile refresh - too soon");
+      return;
+    }
+
     try {
+      setLastProfileRefresh(now);
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
@@ -216,7 +237,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const value = {
+  // Use React.useMemo to prevent unnecessary re-renders
+  const value = React.useMemo(() => ({
     session,
     user,
     profile,
@@ -226,7 +248,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     refreshProfile,
     loading,
     isAuthenticated: !!user,
-  };
+  }), [session, user, profile, loading]);
 
   console.log("AuthProvider rendering with user:", user?.id);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

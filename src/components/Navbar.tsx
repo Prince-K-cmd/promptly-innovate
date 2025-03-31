@@ -24,12 +24,13 @@ const Navbar = () => {
   const profile = auth?.profile ?? null;
   const signOut = auth?.signOut ?? (() => { console.error("SignOut function not available"); return Promise.resolve(); });
 
-  // Ensure we're using the latest profile data
+  // Refresh profile data only once when the component mounts
   React.useEffect(() => {
     if (isAuthenticated && auth.refreshProfile) {
-      auth.refreshProfile();
+      // Pass false to avoid forcing a refresh if it was recently refreshed
+      auth.refreshProfile(false);
     }
-  }, [isAuthenticated, auth]);
+  }, [isAuthenticated]); // Only depend on isAuthenticated, not auth
 
   // Get user initials for avatar fallback
   const getInitials = () => {
