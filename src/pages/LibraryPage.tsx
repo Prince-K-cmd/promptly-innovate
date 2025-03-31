@@ -15,14 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useCategories } from '@/hooks/use-categories';
-import { useSpotlightPrompt } from '@/hooks/use-spotlight-prompt';
 import PromptCard from '@/components/PromptCard';
 import PromptListItem from '@/components/PromptListItem';
-import SpotlightPrompt from '@/components/SpotlightPrompt';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt, Category } from '@/lib/supabase';
-import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart, Grid, List, Sparkles } from 'lucide-react';
+import { Search, PlusCircle, Filter, X, Loader2, Settings, Heart, Grid, List } from 'lucide-react';
 import { eventEmitter, EVENTS } from '@/lib/events';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
