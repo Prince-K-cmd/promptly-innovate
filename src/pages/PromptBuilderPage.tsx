@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePrompts } from '@/hooks/use-prompts';
 import { usePromptBuilder, PromptBuilderFormData } from '@/hooks/use-prompt-builder';
 import { useAIServices } from '@/hooks/use-ai-services';
 import { useApiKeys } from '@/hooks/use-api-keys';
@@ -16,7 +15,7 @@ import SeoComponent from '@/components/SEO';
 import PromptBuilderStepper from '@/components/PromptBuilderStepper';
 import PromptBuilderPreview from '@/components/PromptBuilderPreview';
 import PromptBuilderSuggestions from '@/components/PromptBuilderSuggestions';
-import SavePromptDialog from '@/components/SavePromptDialog';
+import SavePromptFormDialog from '@/components/SavePromptFormDialog';
 import LoginPrompt from '@/components/LoginPrompt';
 
 const defaultFormData: PromptBuilderFormData = {
@@ -31,7 +30,6 @@ const PromptBuilderPage = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { createPrompt } = usePrompts();
   const { saveBuilderHistory } = usePromptBuilder();
   const { apiKeys } = useApiKeys();
   const {
@@ -448,28 +446,17 @@ const PromptBuilderPage = () => {
     }
 
     try {
-      const finalPrompt = generatedPrompt || await generatePrompt();
-      await createPrompt({
-        title: `${formData.category} prompt - ${new Date().toLocaleDateString()}`,
-        text: finalPrompt,
-        category: formData.category || 'general',
-        is_public: false,
-        tags: [formData.category, formData.tone, formData.audience].filter(Boolean),
-        description: `Generated with Prompt Builder. Category: ${formData.category}, Tone: ${formData.tone}, Audience: ${formData.audience}`
-      });
-
-      toast({
-        title: "Prompt saved",
-        description: "Your custom prompt has been saved to your library",
-      });
-
-      // Show the custom save dialog
+      // Make sure we have a generated prompt
+      if (!generatedPrompt) {
+        await generatePrompt();
+      }
+      // Show the save prompt dialog with form
       setShowSaveDialog(true);
     } catch (error) {
-      console.error('Error saving prompt:', error);
+      console.error('Error generating prompt:', error);
       toast({
         variant: "destructive",
-        title: "Failed to save prompt",
+        title: "Failed to generate prompt",
         description: error.message || "An unexpected error occurred",
       });
     }
@@ -593,11 +580,16 @@ const PromptBuilderPage = () => {
       />
 
       {/* Custom Save Dialog */}
-      <SavePromptDialog
+      <SavePromptFormDialog
         open={showSaveDialog}
         onOpenChange={setShowSaveDialog}
         onGoToLibrary={handleGoToLibrary}
         onStartNewPrompt={handleStartNewPrompt}
+        promptText={generatedPrompt}
+        category={formData.category}
+        tone={formData.tone}
+        audience={formData.audience}
+        tags={[]}
       />
 
       {/* Always show the header */}

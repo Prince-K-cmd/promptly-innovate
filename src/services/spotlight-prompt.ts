@@ -2,6 +2,7 @@ import { createAIService } from './ai';
 import { AIPromptRequest } from './ai/types';
 import { Prompt } from '@/lib/supabase';
 import { supabase } from '@/integrations/supabase/client';
+import { capitalizeTitle, generatePromptTitle } from '@/lib/utils/text-utils';
 
 // Cache key for localStorage
 const SPOTLIGHT_CACHE_KEY = 'promptiverse_spotlight_prompt';
@@ -47,16 +48,9 @@ function generateRandomPromptRequest(): AIPromptRequest {
   };
 }
 
-// Generate a title from the prompt text
+// Generate a title from the prompt text - using utility function
 function generateTitle(text: string): string {
-  // Extract first sentence or first 50 characters
-  const firstSentence = text.split(/[.!?]\s/)[0];
-  const title = firstSentence.length > 50
-    ? firstSentence.substring(0, 47) + '...'
-    : firstSentence;
-
-  // Capitalize first letter
-  return title.charAt(0).toUpperCase() + title.slice(1);
+  return generatePromptTitle(text);
 }
 
 // Create a prompt object from generated text
@@ -68,7 +62,7 @@ function createPromptObject(text: string): Prompt {
   return {
     id: 'spotlight-' + Date.now(),
     user_id: 'system',
-    title: title,
+    title: capitalizeTitle(title),
     text: text,
     category: randomCategory,
     tags: ['spotlight', 'featured', randomCategory],
@@ -85,7 +79,7 @@ function getFallbackPrompt(): Prompt {
   return {
     id: 'spotlight-fallback',
     user_id: 'system',
-    title: 'Explain Complex Concepts Simply',
+    title: capitalizeTitle('Explain Complex Concepts Simply'),
     text: 'Describe a complex concept in simple terms that a 10-year-old would understand. Focus on using analogies and everyday examples to make the concept relatable and engaging.',
     category: 'general',
     tags: ['spotlight', 'featured', 'general'],
