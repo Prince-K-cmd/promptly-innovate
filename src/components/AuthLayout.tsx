@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const AuthLayout: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-background to-muted/50">
+      <ScrollToTop />
       {/* Left side - Logo and branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-promptiverse-purple/90 to-promptiverse-teal/90 items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>

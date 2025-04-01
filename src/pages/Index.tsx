@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const Index: React.FC = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const Index: React.FC = () => {
 
   return (
     <Layout>
+      <ScrollToTop />
       <Outlet />
     </Layout>
   );
