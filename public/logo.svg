@@ -1,0 +1,20 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define the gradient background -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <!-- Replace with your actual promptiverse-purple and promptiverse-teal colors -->
+      <stop offset="0%" stop-color="#8A2BE2"/>
+      <stop offset="100%" stop-color="#20B2AA"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Draw the rounded rectangle background -->
+  <rect x="0" y="0" width="32" height="32" rx="12" fill="url(#gradient)"/>
+  
+  <!-- Position the lucide-react BookOpen icon within the padded area -->
+  <g transform="translate(6,6) scale(0.8333)" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 3h7a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H2z"/>
+    <path d="M22 3h-7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h7z"/>
+    <path d="M12 3v18"/>
+  </g>
+</svg>
