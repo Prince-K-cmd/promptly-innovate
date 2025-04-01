@@ -1,5 +1,10 @@
 import { AIService, AIPromptRequest, AISuggestion, AIServiceConfig } from './types';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import {
+  shouldUseShotPrompting,
+  getShotPromptingExamples,
+  createTailoredSuggestionsPrompt
+} from '@/lib/utils/prompt-templates';
 
 export class GeminiService implements AIService {
   private readonly client: GoogleGenerativeAI;
@@ -125,18 +130,21 @@ export class GeminiService implements AIService {
   }
 
   private createPromptForSuggestions(request: AIPromptRequest): string {
-    const { category, tone, audience, step } = request;
+    const { category, tone, audience, step, components } = request;
+
+    // For the final step, use the tailored suggestions prompt
+    if (step === 3) {
+      return createTailoredSuggestionsPrompt(category, tone, audience, components);
+    }
 
     let prompt = 'Generate suggestions for a prompt builder in JSON format. You MUST return EXACTLY 5 suggestions, no more and no less. ';
 
     if (step === 0) {
-      prompt += 'The user is selecting a category. Suggest 5 diverse categories for prompts.';
+      prompt += 'The user is selecting a category. Suggest 5 diverse categories for prompts. Include both creative and technical categories.';
     } else if (step === 1) {
-      prompt += `The user selected "${category}" as the category. Suggest 5 different tones that would work well for this category.`;
+      prompt += `The user selected "${category}" as the category. Suggest 5 different tones that would work well for this category. Consider the range from formal to casual, and technical to conversational.`;
     } else if (step === 2) {
-      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone. Suggest 5 distinct potential audiences for this prompt.`;
-    } else if (step === 3) {
-      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone for ${audience || 'general'} audience. Suggest 5 useful snippets or components that could enhance this prompt.`;
+      prompt += `The user is building a ${category} prompt with a ${tone || 'neutral'} tone. Suggest 5 distinct potential audiences for this prompt. Consider different expertise levels and contexts.`;
     }
 
     prompt += ' Return a JSON object with an array called "suggestions" containing EXACTLY 5 items. Each item must have "type" (category, tone, audience, or snippet), "value" (the actual suggestion), and "text" (a user-friendly description of the suggestion).';
@@ -167,11 +175,20 @@ export class GeminiService implements AIService {
       });
     }
 
+    // Add shot prompting examples if appropriate for this category/context
+    if (shouldUseShotPrompting(category, components)) {
+      const examples = getShotPromptingExamples(category);
+      if (examples) {
+        prompt += `\n${examples}\n`;
+        prompt += '\nCreate a prompt following a similar structure but tailored to the requirements above.\n';
+      }
+    }
+
     prompt += '\nGuidelines:\n';
-    prompt += '1. Be concise but include all necessary information\n';
-    prompt += '2. Include shot prompting (examples) ONLY when it adds significant value\n';
-    prompt += '3. For technical or complex tasks, include brief step-by-step instructions\n';
-    prompt += '4. Adapt detail level to the complexity of the task - simpler tasks need less detail\n';
+    prompt += '1. Be concise and direct - avoid unnecessary words\n';
+    prompt += '2. Make the prompt general without assuming specific use cases\n';
+    prompt += '3. Include only essential context and requirements\n';
+    prompt += '4. Use clear, straightforward language\n';
     prompt += '\nIMPORTANT: Do NOT include phrases like "Here is a prompt" or "Based on your requirements". Start directly with the prompt content. Do NOT add any explanatory text before or after the prompt.';
 
     return prompt;
