@@ -61,10 +61,19 @@ const LoginPage = () => {
 
   return (
     <div className="w-full max-w-md px-4 sm:px-8 py-8 sm:py-12">
-      <div className="text-center mb-8">
+      {/* Show logo only on mobile where the left panel is hidden */}
+      <div className="text-center mb-8 lg:hidden">
         <div className="inline-block bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal rounded-xl p-3 mb-6">
           <BookOpen className="h-10 w-10 text-white" />
         </div>
+        <h1 className="text-3xl font-bold tracking-tight">Sign In to Promptiverse</h1>
+        <p className="text-muted-foreground mt-3">
+          Enter your details to access your account
+        </p>
+      </div>
+
+      {/* Only show the title on desktop, not the logo */}
+      <div className="hidden lg:block text-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Sign In to Promptiverse</h1>
         <p className="text-muted-foreground mt-3">
           Enter your details to access your account
