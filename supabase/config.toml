@@ -1,1 +1,28 @@
 project_id = "aqqemqcdndjvuzgivxli"
+
+# Email templates configuration for Supabase Auth
+
+# Confirm signup email template
+[auth.email.template.confirm_signup]
+subject = "Confirm Your Promptiverse Account"
+template = "confirm-signup.html"
+
+# Reset password email template
+[auth.email.template.reset_password]
+subject = "Reset Your Promptiverse Password"
+template = "reset-password.html"
+
+# Magic link email template
+[auth.email.template.magic_link]
+subject = "Your Promptiverse Magic Link"
+template = "magic-link.html"
+
+# Change email address template
+[auth.email.template.change_email]
+subject = "Confirm Your New Email Address"
+template = "change-email.html"
+
+# Invite user email template
+[auth.email.template.invite]
+subject = "You're Invited to Join Promptiverse"
+template = "invite.html"

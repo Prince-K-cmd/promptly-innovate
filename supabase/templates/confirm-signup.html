@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Your Promptiverse Account</title>
+  <style>
+    /* Base styles for email clients */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .email-header {
+      background: linear-gradient(135deg, #6366f1 0%, #14b8a6 100%);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .email-header img {
+      max-width: 80px;
+      height: auto;
+    }
+    .email-header h1 {
+      color: #ffffff;
+      margin: 15px 0 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .email-body {
+      padding: 30px;
+      color: #333;
+    }
+    .email-body p {
+      margin: 0 0 20px;
+    }
+    .email-footer {
+      background-color: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(135deg, #6366f1 0%, #14b8a6 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin: 20px 0;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    .code-box {
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+      font-family: monospace;
+      font-size: 24px;
+      letter-spacing: 4px;
+      color: #333;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 25px 0;
+    }
+    .help-text {
+      font-size: 14px;
+      color: #666;
+    }
+    @media only screen and (max-width: 480px) {
+      .email-container {
+        width: 100% !important;
+        border-radius: 0;
+      }
+      .email-body {
+        padding: 20px;
+      }
+      .button {
+        display: block;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="email-header">
+      <!-- App Logo -->
+      <img src="{{ .SiteURL }}/logo.svg" alt="Promptiverse Logo" />
+      <h1>Confirm Your Email Address</h1>
+    </div>
+    
+    <div class="email-body">
+      <p>Hello{{ if .Data.username }} {{ .Data.username }}{{ end }},</p>
+      
+      <p>Thank you for signing up for Promptiverse! To complete your registration and start creating powerful AI prompts, please confirm your email address.</p>
+      
+      <div style="text-align: center;">
+        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+      </div>
+      
+      <p>If the button above doesn't work, you can also confirm your email by entering this verification code:</p>
+      
+      <div class="code-box">{{ .Token }}</div>
+      
+      <div class="divider"></div>
+      
+      <p class="help-text">If you didn't create an account with Promptiverse, you can safely ignore this email.</p>
+      
+      <p class="help-text">This confirmation link will expire in 24 hours. If you need a new confirmation link, please visit <a href="{{ .SiteURL }}/login">Promptiverse</a> and request a new one.</p>
+    </div>
+    
+    <div class="email-footer">
+      <p>&copy; 2024 Promptiverse. All rights reserved.</p>
+      <p>Your go-to platform for creating, managing, and sharing powerful AI prompts.</p>
+    </div>
+  </div>
+</body>
+</html>

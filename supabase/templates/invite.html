@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited to Join Promptiverse</title>
+  <style>
+    /* Base styles for email clients */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f9f9f9;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .email-header {
+      background: linear-gradient(135deg, #6366f1 0%, #14b8a6 100%);
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .email-header img {
+      max-width: 80px;
+      height: auto;
+    }
+    .email-header h1 {
+      color: #ffffff;
+      margin: 15px 0 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .email-body {
+      padding: 30px;
+      color: #333;
+    }
+    .email-body p {
+      margin: 0 0 20px;
+    }
+    .email-footer {
+      background-color: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(135deg, #6366f1 0%, #14b8a6 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 12px 30px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin: 20px 0;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    .feature-list {
+      margin: 25px 0;
+      padding: 0;
+      list-style-type: none;
+    }
+    .feature-list li {
+      padding: 10px 0 10px 30px;
+      position: relative;
+    }
+    .feature-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #14b8a6;
+      font-weight: bold;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 25px 0;
+    }
+    .help-text {
+      font-size: 14px;
+      color: #666;
+    }
+    @media only screen and (max-width: 480px) {
+      .email-container {
+        width: 100% !important;
+        border-radius: 0;
+      }
+      .email-body {
+        padding: 20px;
+      }
+      .button {
+        display: block;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="email-header">
+      <!-- App Logo -->
+      <img src="{{ .SiteURL }}/logo.svg" alt="Promptiverse Logo" />
+      <h1>You're Invited to Join Promptiverse</h1>
+    </div>
+    
+    <div class="email-body">
+      <p>Hello,</p>
+      
+      <p>You've been invited to join Promptiverse, the platform for creating, managing, and sharing powerful AI prompts to enhance your productivity and creativity.</p>
+      
+      <div style="text-align: center;">
+        <a href="{{ .ConfirmationURL }}" class="button">Accept Invitation</a>
+      </div>
+      
+      <p>With Promptiverse, you can:</p>
+      
+      <ul class="feature-list">
+        <li>Create custom AI prompts with our interactive builder</li>
+        <li>Organize your prompts in a personal library</li>
+        <li>Get AI-powered suggestions to improve your prompts</li>
+        <li>Share your best prompts with the community</li>
+        <li>Discover high-quality prompts from other users</li>
+      </ul>
+      
+      <div class="divider"></div>
+      
+      <p class="help-text">This invitation will expire in 7 days. If you need a new invitation after that time, please ask the person who invited you to send another one.</p>
+      
+      <p class="help-text">If you believe this invitation was sent to you by mistake, you can safely ignore this email.</p>
+    </div>
+    
+    <div class="email-footer">
+      <p>&copy; 2024 Promptiverse. All rights reserved.</p>
+      <p>Your go-to platform for creating, managing, and sharing powerful AI prompts.</p>
+    </div>
+  </div>
+</body>
+</html>
