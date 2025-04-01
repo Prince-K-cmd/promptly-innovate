@@ -16,9 +16,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import APIKeysManager from '@/components/APIKeysManager';
 import PasswordUpdateForm from '@/components/PasswordUpdateForm';
 import EmailUpdateForm from '@/components/EmailUpdateForm';
-import { Settings, BellRing, Key, Palette, Sun, Moon, Monitor, UserIcon, Lock, Mail } from 'lucide-react';
+import { BellRing, Key, Palette, Sun, Moon, Monitor, UserIcon, Lock, Mail } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
-import { supabase } from '@/integrations/supabase/client';
 
 const notificationFormSchema = z.object({
   emailNotifications: z.boolean().default(true),
@@ -79,16 +78,18 @@ const SettingsPage = () => {
     },
   });
 
+  // Extract the font size value for dependency tracking
+  const currentFontSize = displayForm.watch("fontSize");
+
   // Apply the font size class to the html element
   useEffect(() => {
-    const fontSize = displayForm.watch("fontSize");
     const htmlElement = document.documentElement;
-    
+
     // Remove existing font size classes
     htmlElement.classList.remove('text-sm', 'text-base', 'text-lg', 'text-xl');
-    
+
     // Add the selected font size class
-    switch (fontSize) {
+    switch (currentFontSize) {
       case "sm":
         htmlElement.classList.add('text-sm');
         break;
@@ -102,7 +103,7 @@ const SettingsPage = () => {
         htmlElement.classList.add('text-xl');
         break;
     }
-  }, [displayForm.watch("fontSize")]);
+  }, [currentFontSize]);
 
   function onNotificationSubmit(data: NotificationFormValues) {
     toast({
@@ -118,11 +119,11 @@ const SettingsPage = () => {
         title: "Account settings updated",
         description: "Your account information has been updated.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Failed to update account",
-        description: error.message || "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred",
       });
     }
   }
@@ -130,10 +131,10 @@ const SettingsPage = () => {
   function onDisplaySubmit(data: DisplayFormValues) {
     const { theme, fontSize } = data;
     setTheme(theme);
-    
+
     // Save font size to localStorage
     localStorage.setItem('promptiverse-font-size', fontSize);
-    
+
     toast({
       title: "Display settings updated",
       description: "Your display preferences have been saved.",
@@ -195,7 +196,7 @@ const SettingsPage = () => {
               <span className="hidden md:inline">Display</span>
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="account" className="space-y-6">
             <Card>
               <CardHeader>
@@ -249,7 +250,7 @@ const SettingsPage = () => {
               </CardFooter>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="password" className="space-y-6">
             <Card>
               <CardHeader>
@@ -263,7 +264,7 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="email" className="space-y-6">
             <Card>
               <CardHeader>
@@ -277,7 +278,7 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="notifications" className="space-y-6">
             <Card>
               <CardHeader>
@@ -355,11 +356,11 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="api-keys" className="space-y-6">
             <APIKeysManager />
           </TabsContent>
-          
+
           <TabsContent value="display" className="space-y-6">
             <Card>
               <CardHeader>
@@ -413,7 +414,7 @@ const SettingsPage = () => {
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <FormLabel>Font Size</FormLabel>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
