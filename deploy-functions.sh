@@ -1,3 +1,4 @@
+
 #!/bin/bash
 echo "Deploying Supabase Edge Functions..."
 

@@ -1,8 +1,10 @@
+
 // Follow this setup guide to integrate the Deno runtime into your application:
-// https://deno.com/manual/examples/supabase-functions
+// https://deno.land/manual/examples/supabase-functions
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from 'npm:resend@2.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,12 +33,6 @@ serve(async (req) => {
       }
     )
 
-    // Create an admin client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     // Get the current user
     const {
       data: { user },
@@ -54,6 +50,7 @@ serve(async (req) => {
 
     // Get the user's email
     const userEmail = user.email;
+    const userId = user.id;
 
     if (!userEmail) {
       return new Response(
@@ -67,51 +64,84 @@ serve(async (req) => {
 
     console.log(`Sending password changed notification to ${userEmail}`);
 
-    // Send the password changed notification email
-    // We need to use a raw email send since password_changed is not a standard template
-    const { error } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userEmail,
-    })
+    // Get user profile to include username in the email if available
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
 
-    if (error) {
-      console.error('Error generating link:', error);
+    const username = profile?.username || '';
+
+    // Initialize Resend with API key
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: 'Email service not configured' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+          status: 500,
         }
       )
     }
 
-    // Use the raw email send method to send a custom email
-    const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-custom-email', {
-      body: {
-        email: userEmail,
-        subject: 'Your Promptiverse Password Has Been Changed',
-        template: 'password-changed',
-      }
-    })
+    const resend = new Resend(resendApiKey);
+
+    // Get site URL from environment
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://promptiverse.app';
+
+    // Read the email template
+    const templatePath = './supabase/templates/password-changed.html';
+    let templateContent;
+    try {
+      templateContent = await Deno.readTextFile(templatePath);
+    } catch (error) {
+      console.error('Error reading template file:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to read email template' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      )
+    }
+
+    // Replace template variables
+    templateContent = templateContent
+      .replace(/{{ \.SiteURL }}/g, siteUrl)
+      .replace(/{{ if \.Data\.username }} {{ \.Data\.username }}{{ end }}/g, username ? ` ${username}` : '');
+
+    // Send the email with Resend
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: 'Promptiverse <no-reply@promptiverse.app>',
+      to: [userEmail],
+      subject: 'Your Promptiverse Password Has Been Changed',
+      html: templateContent,
+    });
 
     if (emailError) {
+      console.error('Error sending email:', emailError);
       return new Response(
-        JSON.stringify({ error: emailError.message }),
+        JSON.stringify({ error: emailError }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+          status: 500,
         }
       )
     }
 
+    console.log('Password change notification sent successfully:', emailData);
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, data: emailData }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     )
   } catch (error) {
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

@@ -37,6 +37,36 @@ const PasswordUpdateForm = () => {
     },
   });
 
+  // Send password changed notification
+  const sendPasswordChangedNotification = async () => {
+    try {
+      // Get a fresh session token for the API call
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.error('No valid session token available for sending notification');
+        return;
+      }
+      
+      console.log('Sending password change notification...');
+      
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('send-password-changed-notification', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (error) {
+        console.error('Password change notification failed:', error);
+      } else {
+        console.log('Password change notification sent successfully:', data);
+      }
+    } catch (err) {
+      console.error('Failed to send password change notification:', err);
+    }
+  };
+
   const onSubmit = async (data: PasswordUpdateFormValues) => {
     setIsLoading(true);
     try {
@@ -68,6 +98,9 @@ const PasswordUpdateForm = () => {
           variant: "destructive",
         });
       } else {
+        // Send password changed notification
+        await sendPasswordChangedNotification();
+        
         toast({
           title: "Password updated",
           description: "Your password has been updated successfully",

@@ -101,6 +101,36 @@ const ResetPasswordPage = () => {
     }
   };
 
+  // Send password changed notification
+  const sendPasswordChangedNotification = async () => {
+    try {
+      // Get a fresh session token for the API call
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.error('No valid session token available for sending notification');
+        return;
+      }
+      
+      console.log('Sending password change notification...');
+      
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('send-password-changed-notification', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (error) {
+        console.error('Password change notification failed:', error);
+      } else {
+        console.log('Password change notification sent successfully:', data);
+      }
+    } catch (err) {
+      console.error('Failed to send password change notification:', err);
+    }
+  };
+
   // Handle password form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!token) {
@@ -127,47 +157,7 @@ const ResetPasswordPage = () => {
         setIsSuccess(true);
 
         // Send confirmation email
-        try {
-          // Get the user's email from the session
-          const { data: { user } } = await supabase.auth.getUser();
-          const userEmail = user?.email;
-
-          if (userEmail) {
-            // Call the Supabase Edge Function to send the password changed notification
-            const { VITE_SUPABASE_URL } = import.meta.env;
-            const functionUrl = `${VITE_SUPABASE_URL}/functions/v1/send-password-changed-notification`;
-
-            // Get a fresh session token for the API call
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (session?.access_token) {
-              console.log('Sending password change notification...');
-
-              const response = await fetch(functionUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-                // No need to send body data as the function gets the user from the token
-              });
-
-              if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Password change notification failed:', errorData);
-              } else {
-                console.log('Password change notification sent successfully');
-              }
-            } else {
-              console.error('No valid session token available');
-            }
-          } else {
-            console.error('User email not found');
-          }
-        } catch (emailError) {
-          console.error('Failed to send confirmation email:', emailError);
-          // Don't show error to user as the password reset was successful
-        }
+        await sendPasswordChangedNotification();
 
         // Sign out the user to ensure they're not automatically logged in
         await supabase.auth.signOut();

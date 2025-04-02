@@ -1,3 +1,4 @@
+
 @echo off
 echo Deploying Supabase Edge Functions...
 
