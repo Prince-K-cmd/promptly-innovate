@@ -30,6 +30,12 @@ type AuthContextType = {
   isAuthenticated: boolean;
 };
 
+// Function to clear all localStorage data
+const clearAllLocalStorage = () => {
+  // Clear all localStorage items
+  localStorage.clear();
+};
+
 // Create context with default values
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

@@ -14,7 +14,17 @@ const CreatePromptPage = () => {
   const handleCreatePrompt = async (values: PromptFormValues) => {
     setIsSubmitting(true);
     try {
-      await createPrompt(values);
+      // Ensure all required fields are present
+      const promptData = {
+        title: values.title,
+        text: values.text,
+        category: values.category,
+        description: values.description || '',
+        is_public: values.is_public || false,
+        tags: values.tags || [],
+      };
+      
+      await createPrompt(promptData);
       navigate('/library');
     } catch (error) {
       console.error('Failed to create prompt:', error);
