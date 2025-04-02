@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -123,8 +124,17 @@ const ResetPasswordPage = () => {
       
       if (error) {
         console.error('Password change notification failed:', error);
+        toast({
+          variant: "destructive",
+          title: "Notification failed",
+          description: "We couldn't send you a confirmation email, but your password has been reset.",
+        });
       } else {
         console.log('Password change notification sent successfully:', data);
+        toast({
+          title: "Confirmation email sent",
+          description: "We've sent you an email confirming your password change.",
+        });
       }
     } catch (err) {
       console.error('Failed to send password change notification:', err);
@@ -155,6 +165,10 @@ const ResetPasswordPage = () => {
       } else {
         // Password reset successful
         setIsSuccess(true);
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been reset successfully. You can now log in with your new password.",
+        });
 
         // Send confirmation email
         await sendPasswordChangedNotification();
