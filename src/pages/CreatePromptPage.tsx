@@ -5,10 +5,12 @@ import PromptForm from '@/components/PromptForm';
 import { usePrompts } from '@/hooks/use-prompts';
 import { Card, CardContent } from '@/components/ui/card';
 import { type PromptFormValues } from '@/lib/schemas/promptSchema';
+import { useToast } from '@/hooks/use-toast';
 
 const CreatePromptPage = () => {
   const navigate = useNavigate();
   const { createPrompt } = usePrompts();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreatePrompt = async (values: PromptFormValues) => {
@@ -16,18 +18,27 @@ const CreatePromptPage = () => {
     try {
       // Ensure all required fields are present
       const promptData = {
-        title: values.title,
-        text: values.text,
-        category: values.category,
+        title: values.title || '',
+        text: values.text || '',
+        category: values.category || '',
         description: values.description || '',
         is_public: values.is_public || false,
         tags: values.tags || [],
       };
       
       await createPrompt(promptData);
+      toast({
+        title: "Success",
+        description: "Prompt created successfully",
+      });
       navigate('/library');
     } catch (error) {
       console.error('Failed to create prompt:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create prompt. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }

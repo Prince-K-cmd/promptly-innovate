@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createBrowserRouter, ScrollRestoration } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -11,6 +12,8 @@ import AuthLayout from '@/components/AuthLayout';
 
 // Pages
 import HomePage from '@/pages/HomePage';
+import HomePageSimple from '@/pages/HomePageSimple';
+import SimpleHomePage from '@/pages/SimpleHomePage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
@@ -53,7 +56,7 @@ const router = createBrowserRouter([
     path: "/",
     element: <Index />,
     children: [
-      { path: "", element: <HomePage /> },
+      { path: "", element: <SimpleHomePage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "search", element: <SearchPage /> },
