@@ -49,6 +49,7 @@ Promptiverse is a comprehensive web application designed for creating, managing,
 - **Secure Authentication**: User accounts powered by Supabase
 - **User Profiles**: Customize your profile information
 - **Privacy Controls**: Choose which prompts to make public or private
+- **Password Management**: Secure password reset flow with email notifications
 
 ## 🛠️ Technology Stack
 
@@ -161,6 +162,18 @@ promptly-innovate/
 
 ## 📝 Usage Guide
 
+### Account Management
+
+#### Password Reset
+
+1. On the login page, click "Forgot password?"
+2. Enter your email address and click "Send Reset Link"
+3. Check your email for the password reset link
+4. Click the reset link or copy the reset token
+5. Enter and confirm your new password
+6. After successful reset, you'll be redirected to the login page
+7. Sign in with your new password
+
 ### Setting Up API Keys
 
 1. Navigate to the Settings page
@@ -243,6 +256,31 @@ The application integrates with multiple AI providers through a unified interfac
 - `npm run build:dev` - Build for development
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview the production build locally
+
+## 🚀 Deploying Edge Functions
+
+To deploy the Supabase Edge Functions (required for password reset notifications):
+
+1. Make sure you have Node.js installed (v16 or later recommended).
+
+2. Log in to Supabase:
+   ```bash
+   npx supabase login
+   ```
+
+3. Run the deployment script with your Supabase project reference ID as an argument:
+   ```bash
+   # Windows
+   deploy-functions.bat YOUR_PROJECT_REF
+
+   # Mac/Linux
+   chmod +x deploy-functions.sh
+   ./deploy-functions.sh YOUR_PROJECT_REF
+   ```
+
+   Replace `YOUR_PROJECT_REF` with your actual Supabase project reference ID (found in Project Settings).
+
+For more details, see the [Edge Functions README](supabase/functions/README.md).
 
 ## 🤝 Contributing
 

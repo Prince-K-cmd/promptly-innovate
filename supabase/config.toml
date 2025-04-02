@@ -3,31 +3,33 @@ project_id = "aqqemqcdndjvuzgivxli"
 # Email templates configuration for Supabase Auth
 
 # Confirm signup email template
-[auth.email.template.confirm_signup]
+[auth.email.template.confirmation]
 subject = "Confirm Your Promptiverse Account"
-template = "confirm-signup.html"
+content_path = "./supabase/templates/confirm-signup.html"
 
 # Reset password email template
-[auth.email.template.reset_password]
+[auth.email.template.recovery]
 subject = "Reset Your Promptiverse Password"
-template = "reset-password.html"
+content_path = "./supabase/templates/reset-password.html"
 
 # Magic link email template
 [auth.email.template.magic_link]
 subject = "Your Promptiverse Magic Link"
-template = "magic-link.html"
+content_path = "./supabase/templates/magic-link.html"
 
 # Change email address template
-[auth.email.template.change_email]
+[auth.email.template.email_change]
 subject = "Confirm Your New Email Address"
-template = "change-email.html"
+content_path = "./supabase/templates/change-email.html"
 
 # Invite user email template
 [auth.email.template.invite]
 subject = "You're Invited to Join Promptiverse"
-template = "invite.html"
+content_path = "./supabase/templates/invite.html"
 
 # Password changed notification email template
+# Note: This is a custom template not directly supported by Supabase
+# It will be used by our Edge Function
 [auth.email.template.password_changed]
 subject = "Your Promptiverse Password Has Been Changed"
-template = "password-changed.html"
+content_path = "./supabase/templates/password-changed.html"

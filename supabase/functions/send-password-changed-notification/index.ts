@@ -31,6 +31,12 @@ serve(async (req) => {
       }
     )
 
+    // Create an admin client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // Get the current user
     const {
       data: { user },
@@ -46,14 +52,51 @@ serve(async (req) => {
       )
     }
 
+    // Get the user's email
+    const userEmail = user.email;
+
+    if (!userEmail) {
+      return new Response(
+        JSON.stringify({ error: 'User email not found' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
+    console.log(`Sending password changed notification to ${userEmail}`);
+
     // Send the password changed notification email
-    const { error } = await supabaseClient.auth.admin.sendPasswordChangedEmail({
-      email: user.email,
+    // We need to use a raw email send since password_changed is not a standard template
+    const { error } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: userEmail,
     })
 
     if (error) {
+      console.error('Error generating link:', error);
       return new Response(
         JSON.stringify({ error: error.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
+    }
+
+    // Use the raw email send method to send a custom email
+    const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-custom-email', {
+      body: {
+        email: userEmail,
+        subject: 'Your Promptiverse Password Has Been Changed',
+        template: 'password-changed',
+      }
+    })
+
+    if (emailError) {
+      return new Response(
+        JSON.stringify({ error: emailError.message }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,

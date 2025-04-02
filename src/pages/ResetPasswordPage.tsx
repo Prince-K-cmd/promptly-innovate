@@ -128,18 +128,42 @@ const ResetPasswordPage = () => {
 
         // Send confirmation email
         try {
-          // This is a custom function call to your backend or Supabase Edge Function
-          // that would send a confirmation email
-          await fetch('/api/send-password-changed-notification', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              // You can get the user's email from the session if needed
-              // This is just a placeholder
-            }),
-          });
+          // Get the user's email from the session
+          const { data: { user } } = await supabase.auth.getUser();
+          const userEmail = user?.email;
+
+          if (userEmail) {
+            // Call the Supabase Edge Function to send the password changed notification
+            const { VITE_SUPABASE_URL } = import.meta.env;
+            const functionUrl = `${VITE_SUPABASE_URL}/functions/v1/send-password-changed-notification`;
+
+            // Get a fresh session token for the API call
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session?.access_token) {
+              console.log('Sending password change notification...');
+
+              const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                // No need to send body data as the function gets the user from the token
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Password change notification failed:', errorData);
+              } else {
+                console.log('Password change notification sent successfully');
+              }
+            } else {
+              console.error('No valid session token available');
+            }
+          } else {
+            console.error('User email not found');
+          }
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError);
           // Don't show error to user as the password reset was successful
