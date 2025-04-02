@@ -232,22 +232,22 @@ export type Database = {
       }
       saved_prompts: {
         Row: {
-          created_at: string
           id: string
-          prompt_id: string
           user_id: string
+          prompt_id: string
+          created_at: string
         }
         Insert: {
-          created_at?: string
           id?: string
-          prompt_id: string
           user_id: string
+          prompt_id: string
+          created_at?: string
         }
         Update: {
-          created_at?: string
           id?: string
-          prompt_id?: string
           user_id?: string
+          prompt_id?: string
+          created_at?: string
         }
         Relationships: [
           {
@@ -257,6 +257,13 @@ export type Database = {
             referencedRelation: "prompts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "saved_prompts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }

@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Define a Profile interface
 interface Profile {
   id: string;
   username: string;
@@ -12,7 +14,7 @@ interface Profile {
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
-  [key: string]: any;
+  [key: string]: any; // Allow for additional properties
 }
 
 type AuthContextType = {
@@ -28,10 +30,13 @@ type AuthContextType = {
   isAuthenticated: boolean;
 };
 
+// Function to clear all localStorage data
 const clearAllLocalStorage = () => {
+  // Clear all localStorage items
   localStorage.clear();
 };
 
+// Create context with default values
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -43,10 +48,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
+    // Initialize authListener first to avoid race conditions
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log("Auth state changed:", event, currentSession?.user?.id);
 
-      if (event === 'USER_UPDATED' && window.location.pathname === '/verify-email') {
+      // If this is an email verification event, we don't want to set the session
+      // This prevents automatic login after email verification
+      if (event === 'EMAIL_CONFIRMED' || event === 'SIGNED_IN' && window.location.pathname === '/verify-email') {
         console.log('Email verification detected, not setting session');
         return;
       }
@@ -54,7 +62,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
+      // If user is available, fetch profile data
       if (currentSession?.user) {
+        // Use setTimeout to prevent potential deadlocks
         setTimeout(async () => {
           try {
             const { data: profileData } = await supabase
@@ -77,6 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
+    // Then, check for an existing session
     const getSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -86,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setSession(data.session);
           setUser(data.session.user);
 
+          // Fetch user profile
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')
@@ -119,6 +131,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     if (!error && data.user) {
+      // Create a profile entry with default avatar
       const username = email.split('@')[0];
 
       await supabase.from('profiles').insert([
@@ -164,6 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: "Signed in successfully",
       });
 
+      // Sync local storage prompts if any
       const localPrompts = localStorage.getItem('promptiverse_prompts');
       if (localPrompts) {
         try {
@@ -177,6 +191,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             });
           }
 
+          // Clear local storage after sync
           localStorage.removeItem('promptiverse_prompts');
 
           toast({
@@ -197,6 +212,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     await supabase.auth.signOut();
 
+    // Clear all localStorage data when signing out
+    // This ensures a fresh start for the next user
     clearAllLocalStorage();
 
     setLoading(false);
@@ -205,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  // Function to send a password reset email
   const resetPasswordForEmail = async (email: string, redirectTo?: string) => {
     setLoading(true);
 
@@ -229,9 +247,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return { error };
   };
 
+  // Function to refresh the profile data
   const refreshProfile = async (force = false) => {
     if (!user) return;
 
+    // Prevent excessive refreshes by checking the time since last refresh
+    // Only refresh if forced or if it's been more than 2 seconds since the last refresh
     const now = Date.now();
     if (!force && now - lastProfileRefresh < 2000) {
       console.log("Skipping profile refresh - too soon");
@@ -260,6 +281,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Use React.useMemo to prevent unnecessary re-renders
   const value = React.useMemo(() => ({
     session,
     user,

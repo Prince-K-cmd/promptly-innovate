@@ -11,9 +11,7 @@ const SearchPage = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
-  const { prompts, loading } = usePrompts({
-    searchTerm: debouncedSearchTerm  // Updated to use searchTerm instead of search
-  });
+  const { prompts, loading } = usePrompts(undefined, debouncedSearchTerm);
   
   // Debounce search term to avoid too many requests
   useEffect(() => {
