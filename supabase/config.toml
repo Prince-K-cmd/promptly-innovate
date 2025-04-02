@@ -26,3 +26,8 @@ template = "change-email.html"
 [auth.email.template.invite]
 subject = "You're Invited to Join Promptiverse"
 template = "invite.html"
+
+# Password changed notification email template
+[auth.email.template.password_changed]
+subject = "Your Promptiverse Password Has Been Changed"
+template = "password-changed.html"

@@ -24,6 +24,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPasswordForEmail: (email: string, redirectTo?: string) => Promise<{ error: any }>;
   refreshProfile: (force?: boolean) => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
@@ -197,10 +198,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     setLoading(true);
     await supabase.auth.signOut();
+
+    // Clear all localStorage data when signing out
+    // This ensures a fresh start for the next user
+    clearAllLocalStorage();
+
     setLoading(false);
     toast({
       title: "Signed out successfully",
     });
+  };
+
+  // Function to send a password reset email
+  const resetPasswordForEmail = async (email: string, redirectTo?: string) => {
+    setLoading(true);
+
+    const options = redirectTo ? { redirectTo } : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, options);
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to send reset email",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for a password reset link",
+      });
+    }
+
+    return { error };
   };
 
   // Function to refresh the profile data
@@ -245,6 +276,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp,
     signIn,
     signOut,
+    resetPasswordForEmail,
     refreshProfile,
     loading,
     isAuthenticated: !!user,

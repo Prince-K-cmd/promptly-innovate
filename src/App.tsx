@@ -13,6 +13,7 @@ import AuthLayout from '@/components/AuthLayout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import SearchPage from '@/pages/SearchPage';
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
     children: [
       { path: "login", element: <LoginPage /> },
       { path: "signup", element: <SignupPage /> },
+      { path: "reset-password", element: <ResetPasswordPage /> },
     ],
   },
   // Main app routes (with header/footer)
