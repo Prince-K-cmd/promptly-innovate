@@ -46,6 +46,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Home', href: '/' },
     { name: 'Library', href: '/library' },
+    { name: 'Community', href: '/community' },
     { name: 'Create', href: '/create' },
     {
       name: "Prompt Builder",

@@ -3,11 +3,10 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Prompt } from '@/lib/supabase';
-import { Copy, Check, Zap, PlusCircle } from 'lucide-react';
+import { Copy, Check, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import AddToMyPromptsDialog from './AddToMyPromptsDialog';
+import SaveToCollectionButton from './SaveToCollectionButton';
 
 interface SpotlightPromptCardProps {
   prompt: Prompt;
@@ -19,10 +18,8 @@ const SpotlightPromptCard: React.FC<SpotlightPromptCardProps> = ({
   className
 }) => {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [showFullText, setShowFullText] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isAddingToPrompts, setIsAddingToPrompts] = useState(false);
 
   // Truncate text for display
   const truncatedText = prompt.text.length > 150 ? `${prompt.text.substring(0, 150)}...` : prompt.text;
@@ -37,19 +34,6 @@ const SpotlightPromptCard: React.FC<SpotlightPromptCardProps> = ({
     });
 
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Handle add to my prompts
-  const handleAddToMyPrompts = () => {
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Authentication required",
-        description: "Please sign in to add this prompt to your library",
-      });
-      return;
-    }
-    setIsAddingToPrompts(true);
   };
 
   return (
@@ -99,14 +83,14 @@ const SpotlightPromptCard: React.FC<SpotlightPromptCardProps> = ({
           </div>
 
           <div className="flex gap-2 flex-wrap justify-end">
-            <Button
+            <SaveToCollectionButton
+              promptId={prompt.id}
+              prompt={prompt}
               size="sm"
               variant="outline"
-              onClick={handleAddToMyPrompts}
-            >
-              <PlusCircle className="h-4 w-4 mr-1" />
-              Save to My Collection
-            </Button>
+              className="min-w-[170px]"
+              enableEditMode={true}
+            />
 
             <Button
               size="sm"
@@ -129,12 +113,7 @@ const SpotlightPromptCard: React.FC<SpotlightPromptCardProps> = ({
         </CardFooter>
       </Card>
 
-      {/* Add to My Prompts Dialog */}
-      <AddToMyPromptsDialog
-        open={isAddingToPrompts}
-        onOpenChange={setIsAddingToPrompts}
-        prompt={prompt}
-      />
+      {/* Dialog removed - now using SaveToCollectionButton with built-in edit mode */}
     </>
   );
 };

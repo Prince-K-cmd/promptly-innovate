@@ -20,9 +20,11 @@ import {
 import { Prompt } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/use-favorites';
-import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Heart, Share } from 'lucide-react';
+import { useSavedPrompts } from '@/hooks/use-saved-prompts';
+import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Heart, Share, Bookmark, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import SaveToCollectionButton from './SaveToCollectionButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,14 +54,21 @@ const PromptCard: React.FC<PromptCardProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+  const { isSaved } = useSavedPrompts();
   const [showFullText, setShowFullText] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
   // Check if prompt is a favorite
   const promptIsFavorite = user ? isFavorite(prompt.id) : false;
 
+  // Check if prompt is saved to collection
+  const promptIsSaved = user ? isSaved(prompt.id) : false;
+
   // Check if the user is owner of the prompt
   const isOwner = user?.id === prompt.user_id || prompt.user_id === 'local';
+
+  // Check if this is a community prompt (public and not owned by current user)
+  const isCommunityPrompt = prompt.is_public && user?.id !== prompt.user_id && prompt.user_id !== 'local';
 
   const truncatedText = prompt.text.length > 150 ? `${prompt.text.substring(0, 150)}...` : prompt.text;
 
@@ -139,6 +148,18 @@ const PromptCard: React.FC<PromptCardProps> = ({
                     Public
                   </span>
                 )}
+                {isOwner && (
+                  <span className="inline-flex items-center ml-2 text-primary/70">
+                    <User className="h-3 w-3 mr-1" />
+                    Yours
+                  </span>
+                )}
+                {promptIsSaved && !isOwner && (
+                  <span className="inline-flex items-center ml-2 text-primary/70">
+                    <Bookmark className="h-3 w-3 mr-1" />
+                    Saved
+                  </span>
+                )}
               </CardDescription>
             </div>
 
@@ -158,6 +179,18 @@ const PromptCard: React.FC<PromptCardProps> = ({
                   <Share className="mr-2 h-4 w-4" />
                   <span>Share</span>
                 </DropdownMenuItem>
+                {isCommunityPrompt && user && (
+                  <DropdownMenuItem onClick={() => {}} onSelect={(e) => {
+                    e.preventDefault();
+                    const saveButton = document.getElementById(`save-button-${prompt.id}`);
+                    if (saveButton) {
+                      saveButton.click();
+                    }
+                  }}>
+                    <Bookmark className={cn("mr-2 h-4 w-4", promptIsSaved && "fill-primary text-primary")} />
+                    <span>{promptIsSaved ? "Remove from collection" : "Save to my collection"}</span>
+                  </DropdownMenuItem>
+                )}
                 {user && (
                   <DropdownMenuItem onClick={handleToggleFavorite}>
                     <Heart className={cn("mr-2 h-4 w-4", promptIsFavorite && "fill-red-500 text-red-500")} />
@@ -237,6 +270,15 @@ const PromptCard: React.FC<PromptCardProps> = ({
                 <Heart className={cn("h-3.5 w-3.5 mr-1", promptIsFavorite && "fill-red-500")} />
                 {promptIsFavorite ? "Favorited" : "Favorite"}
               </Button>
+            )}
+
+            {isCommunityPrompt && user && (
+              <SaveToCollectionButton
+                id={`save-button-${prompt.id}`}
+                promptId={prompt.id}
+                variant="outline"
+                size="sm"
+              />
             )}
 
             <Button

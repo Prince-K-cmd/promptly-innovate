@@ -33,4 +33,8 @@ export const eventEmitter = new EventEmitter();
 // Event names
 export const EVENTS = {
   FAVORITES_CHANGED: 'favorites_changed',
+  SAVED_PROMPTS_CHANGED: 'saved_prompts_changed',
+  PROMPT_CREATED: 'prompt_created',
+  PROMPT_UPDATED: 'prompt_updated',
+  PROMPT_DELETED: 'prompt_deleted',
 };

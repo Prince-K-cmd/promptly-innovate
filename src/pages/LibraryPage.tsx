@@ -17,6 +17,7 @@ import { useFavorites } from '@/hooks/use-favorites';
 import { useCategories } from '@/hooks/use-categories';
 import PromptCard from '@/components/PromptCard';
 import PromptListItem from '@/components/PromptListItem';
+import PromptPagination from '@/components/PromptPagination';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import PromptForm from '@/components/PromptForm';
 import { Prompt, Category } from '@/lib/supabase';
@@ -86,6 +87,7 @@ const LibraryPage = () => {
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     // Try to get the saved view mode from localStorage
     const savedViewMode = localStorage.getItem('promptLibraryViewMode');
@@ -96,16 +98,22 @@ const LibraryPage = () => {
   const { categories } = useCategories();
 
   // Get prompts based on filters
+  const result = usePrompts({
+    category: selectedCategory === 'All' ? undefined : selectedCategory,
+    searchTerm,
+    tags: activeTags.length > 0 ? activeTags : undefined,
+    filterType: 'library',
+    page: currentPage,
+    pageSize: 12
+  }) as any;
+
   const {
     prompts,
     loading,
     updatePrompt,
     deletePrompt,
-  } = usePrompts(
-    selectedCategory === 'All' ? undefined : selectedCategory,
-    searchTerm,
-    activeTags.length > 0 ? activeTags : undefined
-  );
+    pagination
+  } = result;
 
   // Get favorites
   const { favorites, loading: favoritesLoading, fetchFavorites } = useFavorites();
@@ -123,6 +131,11 @@ const LibraryPage = () => {
       unsubscribe();
     };
   }, [fetchFavorites]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, activeTags, currentTab]);
 
   // Filter prompts that are in favorites with the same filters applied
   const favoritePrompts = React.useMemo(() => {
@@ -451,7 +464,22 @@ const LibraryPage = () => {
 
             // Has prompts
             if (prompts.length > 0) {
-              return renderPromptList(prompts, viewMode, handleEditPrompt, handleDeletePrompt);
+              return (
+                <>
+                  {renderPromptList(prompts, viewMode, handleEditPrompt, handleDeletePrompt)}
+
+                  {/* Pagination */}
+                  {pagination && pagination.totalPages > 1 && (
+                    <div className="mt-8 flex justify-center">
+                      <PromptPagination
+                        currentPage={pagination.currentPage}
+                        totalPages={pagination.totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  )}
+                </>
+              );
             }
 
             // No prompts found

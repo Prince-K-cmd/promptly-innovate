@@ -110,27 +110,27 @@
       <img src="{{ .SiteURL }}/logo.svg" alt="Promptiverse Logo" />
       <h1>Confirm Your Email Address</h1>
     </div>
-    
+
     <div class="email-body">
       <p>Hello{{ if .Data.username }} {{ .Data.username }}{{ end }},</p>
-      
+
       <p>Thank you for signing up for Promptiverse! To complete your registration and start creating powerful AI prompts, please confirm your email address.</p>
-      
+
       <div style="text-align: center;">
-        <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+        <a href="{{ .SiteURL }}/verify-email#access_token={{ .Token }}" class="button">Confirm Email Address</a>
       </div>
-      
+
       <p>If the button above doesn't work, you can also confirm your email by entering this verification code:</p>
-      
+
       <div class="code-box">{{ .Token }}</div>
-      
+
       <div class="divider"></div>
-      
+
       <p class="help-text">If you didn't create an account with Promptiverse, you can safely ignore this email.</p>
-      
+
       <p class="help-text">This confirmation link will expire in 24 hours. If you need a new confirmation link, please visit <a href="{{ .SiteURL }}/login">Promptiverse</a> and request a new one.</p>
     </div>
-    
+
     <div class="email-footer">
       <p>&copy; 2024 Promptiverse. All rights reserved.</p>
       <p>Your go-to platform for creating, managing, and sharing powerful AI prompts.</p>

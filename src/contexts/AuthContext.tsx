@@ -52,6 +52,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log("Auth state changed:", event, currentSession?.user?.id);
 
+      // If this is an email verification event, we don't want to set the session
+      // This prevents automatic login after email verification
+      if (event === 'EMAIL_CONFIRMED' || event === 'SIGNED_IN' && window.location.pathname === '/verify-email') {
+        console.log('Email verification detected, not setting session');
+        return;
+      }
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
