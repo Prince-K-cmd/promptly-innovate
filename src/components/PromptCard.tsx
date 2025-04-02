@@ -20,7 +20,7 @@ import {
 import { Prompt } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/use-favorites';
-import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Heart, Share, PlusCircle } from 'lucide-react';
+import { Copy, MoreHorizontal, Edit, Trash2, Lock, Globe, Heart, Share } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -35,7 +35,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import SavePromptDialog from '@/components/SavePromptDialog';
-import AddToMyPromptsDialog from '@/components/AddToMyPromptsDialog';
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -55,7 +54,6 @@ const PromptCard: React.FC<PromptCardProps> = ({
   const { isFavorite, addFavorite, removeFavorite } = useFavorites();
   const [showFullText, setShowFullText] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [isAddingToMyPrompts, setIsAddingToMyPrompts] = useState(false);
 
   // Check if prompt is a favorite
   const promptIsFavorite = user ? isFavorite(prompt.id) : false;
@@ -100,28 +98,6 @@ const PromptCard: React.FC<PromptCardProps> = ({
     } else {
       await addFavorite(prompt.id);
     }
-  };
-
-  // Handle save to my prompts (for other users' prompts)
-  const handleSaveToMyPrompts = () => {
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Authentication required",
-        description: "Please sign in to save this prompt to your collection",
-      });
-      return;
-    }
-
-    // If it's the user's own prompt, show a message
-    if (isOwner) {
-      toast({
-        description: "This is already your prompt.",
-      });
-      return;
-    }
-
-    setIsAddingToMyPrompts(true);
   };
 
   // Handle share prompt
@@ -186,12 +162,6 @@ const PromptCard: React.FC<PromptCardProps> = ({
                   <DropdownMenuItem onClick={handleToggleFavorite}>
                     <Heart className={cn("mr-2 h-4 w-4", promptIsFavorite && "fill-red-500 text-red-500")} />
                     <span>{promptIsFavorite ? "Remove from favorites" : "Add to favorites"}</span>
-                  </DropdownMenuItem>
-                )}
-                {!isOwner && user && (
-                  <DropdownMenuItem onClick={handleSaveToMyPrompts}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Save to my collection</span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -294,15 +264,6 @@ const PromptCard: React.FC<PromptCardProps> = ({
             handleCloseShareDialog();
             // Start new prompt implementation would go here
           }}
-        />
-      )}
-
-      {/* Add to My Prompts Dialog */}
-      {isAddingToMyPrompts && (
-        <AddToMyPromptsDialog
-          open={isAddingToMyPrompts}
-          onOpenChange={setIsAddingToMyPrompts}
-          prompt={prompt}
         />
       )}
     </>
