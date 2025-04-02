@@ -1,7 +1,4 @@
 
-/* Import custom animations - must come before other statements */
-@import './styles/animations.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,36 +80,36 @@
   * {
     @apply border-border;
   }
-
+  
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-
+  
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
-
+  
   h1 {
     @apply text-4xl lg:text-5xl;
   }
-
+  
   h2 {
     @apply text-3xl lg:text-4xl;
   }
-
+  
   h3 {
     @apply text-2xl lg:text-3xl;
   }
-
+  
   h4 {
     @apply text-xl lg:text-2xl;
   }
-
+  
   h5 {
     @apply text-lg lg:text-xl;
   }
-
+  
   p {
     @apply leading-7;
   }
@@ -122,15 +119,15 @@
   .gradient-text {
     @apply bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal bg-clip-text text-transparent;
   }
-
+  
   .card-hover {
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
   }
-
+  
   .button-hover {
     @apply transition-all duration-200 hover:scale-105 active:scale-95;
   }
-
+  
   .glassmorphism {
     @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-md;
   }

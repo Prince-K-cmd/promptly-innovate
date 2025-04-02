@@ -14,7 +14,6 @@ import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import EmailVerificationSuccessPage from '@/pages/EmailVerificationSuccessPage';
 import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import SearchPage from '@/pages/SearchPage';
@@ -22,7 +21,6 @@ import LibraryPage from '@/pages/LibraryPage';
 import CreatePromptPage from '@/pages/CreatePromptPage';
 import PromptBuilderPage from '@/pages/PromptBuilderPage';
 import CategoryManagementPage from '@/pages/CategoryManagementPage';
-import CommunityPromptsPage from '@/pages/CommunityPromptsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 // Create a client
@@ -45,7 +43,6 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "signup", element: <SignupPage /> },
       { path: "reset-password", element: <ResetPasswordPage /> },
-      { path: "verify-email", element: <EmailVerificationSuccessPage /> },
     ],
   },
   // Main app routes (with header/footer)
@@ -61,7 +58,6 @@ const router = createBrowserRouter([
       { path: "create", element: <CreatePromptPage /> },
       { path: "builder", element: <PromptBuilderPage /> },
       { path: "categories", element: <CategoryManagementPage /> },
-      { path: "community", element: <CommunityPromptsPage /> },
       { path: "not-found", element: <NotFoundPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
