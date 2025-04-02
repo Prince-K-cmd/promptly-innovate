@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
       console.log("Auth state changed:", event, currentSession?.user?.id);
 
       if (event === 'USER_UPDATED' && window.location.pathname === '/verify-email') {

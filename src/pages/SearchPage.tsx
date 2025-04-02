@@ -12,7 +12,7 @@ const SearchPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   
   const { prompts, loading } = usePrompts({
-    search: debouncedSearchTerm
+    searchTerm: debouncedSearchTerm  // Updated to use searchTerm instead of search
   });
   
   // Debounce search term to avoid too many requests
