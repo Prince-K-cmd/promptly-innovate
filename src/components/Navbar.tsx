@@ -1,185 +1,247 @@
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Menu, LogIn, User, BookOpen, LogOut, Settings, Wand2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { Home, BookOpen, Search, Settings, User, LogIn, Menu, X, PlusCircle, Building2, Globe } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
 
-const Navbar = () => {
+const Navbar: React.FC = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const auth = useAuth(); // Hook called unconditionally at the top
+  const { user, profile, signOut } = useAuth();
+  const isMobile = useMobile();
+  const [isOpen, setIsOpen] = useState(false);
+  const { toast } = useToast();
 
-  // Explicitly define variables with defaults if auth context is not available
-  const isAuthenticated = auth?.isAuthenticated ?? false;
-  const profile = auth?.profile ?? null;
-  const signOut = auth?.signOut ?? (() => { console.error("SignOut function not available"); return Promise.resolve(); });
-
-  // Refresh profile data only once when the component mounts
-  React.useEffect(() => {
-    if (isAuthenticated && auth.refreshProfile) {
-      // Pass false to avoid forcing a refresh if it was recently refreshed
-      auth.refreshProfile(false);
-    }
-  }, [isAuthenticated]); // Only depend on isAuthenticated, not auth
-
-  // Get user initials for avatar fallback
-  const getInitials = () => {
-    if (profile?.full_name) {
-      return profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-    }
-    if (profile?.username) {
-      return profile.username.substring(0, 2).toUpperCase();
-    }
-    return 'PV';
-  };
-
-  const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Library', href: '/library' },
-    { name: 'Create', href: '/create' },
-    {
-      name: "Prompt Builder",
-      href: "/builder",
-      icon: <Wand2 className="h-4 w-4" />,
-      requiresAuth: true,
-    },
+  const links = [
+    { path: '/', label: 'Home', icon: <Home className="h-5 w-5" /> },
+    { path: '/library', label: 'My Library', icon: <BookOpen className="h-5 w-5" /> },
+    { path: '/community', label: 'Community', icon: <Globe className="h-5 w-5" /> },
+    { path: '/search', label: 'Search', icon: <Search className="h-5 w-5" /> },
   ];
 
-  return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2">
-          <div className="bg-gradient-to-r from-promptiverse-purple to-promptiverse-teal rounded-xl p-1.5">
-            <BookOpen className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-xl">Promptiverse</span>
-        </Link>
+  const isActive = (path: string) => location.pathname === path;
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              to={link.href}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
-                location.pathname === link.href
-                  ? "text-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              {link.name}
-            </Link>
-          ))}
-        </nav>
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    toast({
+      title: "Logged out successfully",
+    });
+  };
 
-        {/* Right Side - Auth & Profile */}
-        <div className="flex items-center space-x-4">
-          <Link to="/search" className="hidden md:flex text-muted-foreground hover:text-foreground transition-colors">
-            <Search className="h-5 w-5" />
-          </Link>
+  const closeSheet = () => {
+    setIsOpen(false);
+  };
 
-          {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="h-8 w-8 cursor-pointer button-hover">
-                  <AvatarImage src={profile?.avatar_url} alt={profile?.username || "User"} />
-                  <AvatarFallback>{getInitials()}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    {profile?.full_name && <p className="font-medium">{profile.full_name}</p>}
-                    {profile?.username && <p className="text-sm text-muted-foreground">{profile.username}</p>}
+  // Mobile navigation
+  if (isMobile) {
+    return (
+      <nav className="w-full h-16 border-b px-6 flex items-center justify-between sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+        <div className="flex items-center">
+          <Link to="/" className="font-bold text-lg">Promptiverse</Link>
+        </div>
+        
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="flex flex-col h-full p-0">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-bold text-lg">Promptiverse</span>
+                <Button variant="ghost" size="icon" onClick={closeSheet}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              {user && profile && (
+                <div className="flex items-center gap-3 mb-2">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={profile.avatar_url || undefined} alt={profile.username} />
+                    <AvatarFallback>{profile.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium">{profile.username}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {profile.full_name || ''}
+                    </div>
                   </div>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="cursor-pointer flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+              )}
+            </div>
+            
+            <div className="flex-1 flex flex-col p-6 space-y-6">
+              {links.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    "flex items-center gap-3 text-base",
+                    isActive(link.path) 
+                      ? "text-primary font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={closeSheet}
+                >
+                  {link.icon}
+                  {link.label}
+                </Link>
+              ))}
+              
+              <Button 
+                variant="default" 
+                className="w-full justify-start gap-2"
+                onClick={() => {
+                  closeSheet();
+                  navigate('/create');
+                }}
+              >
+                <PlusCircle className="h-5 w-5" />
+                Create Prompt
+              </Button>
+              
+              {user ? (
+                <>
+                  <Link
+                    to="/profile"
+                    className={cn(
+                      "flex items-center gap-3 text-base",
+                      isActive('/profile') 
+                        ? "text-primary font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={closeSheet}
+                  >
+                    <User className="h-5 w-5" />
+                    Profile
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="cursor-pointer flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                  <Link
+                    to="/settings"
+                    className={cn(
+                      "flex items-center gap-3 text-base",
+                      isActive('/settings') 
+                        ? "text-primary font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={closeSheet}
+                  >
+                    <Settings className="h-5 w-5" />
+                    Settings
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-red-600 focus:text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button variant="default" size="sm" asChild>
-              <Link to="/login" className="flex items-center">
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => {
+                      handleSignOut();
+                      closeSheet();
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    closeSheet();
+                    navigate('/login');
+                  }}
+                >
+                  <LogIn className="h-5 w-5" />
+                  Sign In
+                </Button>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </nav>
+    );
+  }
+
+  // Desktop navigation
+  return (
+    <nav className="w-full h-16 border-b px-6 flex items-center justify-between sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+      <div className="flex items-center">
+        <Link to="/" className="font-bold text-lg mr-6">Promptiverse</Link>
+        
+        <div className="flex items-center space-x-1">
+          {links.map((link) => (
+            <Button
+              key={link.path}
+              variant={isActive(link.path) ? "secondary" : "ghost"}
+              asChild
+              className={cn(
+                "gap-2",
+                isActive(link.path) ? "text-secondary-foreground" : "text-muted-foreground"
+              )}
+            >
+              <Link to={link.path}>
+                {link.icon}
+                {link.label}
               </Link>
             </Button>
-          )}
-
-          {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col gap-4 mt-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.name}
-                    to={link.href}
-                    className={cn(
-                      "text-base font-medium transition-colors hover:text-primary p-2 rounded-md",
-                      location.pathname === link.href
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-                <Link
-                  to="/search"
-                  className="text-base font-medium transition-colors hover:text-primary p-2 rounded-md text-muted-foreground flex items-center"
-                >
-                  <Search className="h-5 w-5 mr-2" />
-                  Search
-                </Link>
-                {!isAuthenticated && (
-                  <Link
-                    to="/login"
-                    className="text-base font-medium transition-colors hover:text-primary p-2 rounded-md text-muted-foreground flex items-center"
-                  >
-                    <LogIn className="h-5 w-5 mr-2" />
-                    Sign In
-                  </Link>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+          ))}
         </div>
       </div>
-    </header>
+      
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="default" 
+          size="sm" 
+          className="gap-2"
+          onClick={() => navigate('/create')}
+        >
+          <PlusCircle className="h-4 w-4" />
+          Create Prompt
+        </Button>
+        
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.username} />
+                  <AvatarFallback>{profile?.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+            Sign In
+          </Button>
+        )}
+      </div>
+    </nav>
   );
 };
 

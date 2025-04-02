@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createBrowserRouter, ScrollRestoration } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -21,6 +22,7 @@ import LibraryPage from '@/pages/LibraryPage';
 import CreatePromptPage from '@/pages/CreatePromptPage';
 import PromptBuilderPage from '@/pages/PromptBuilderPage';
 import CategoryManagementPage from '@/pages/CategoryManagementPage';
+import CommunityPage from '@/pages/CommunityPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
 // Create a client
@@ -58,6 +60,7 @@ const router = createBrowserRouter([
       { path: "create", element: <CreatePromptPage /> },
       { path: "builder", element: <PromptBuilderPage /> },
       { path: "categories", element: <CategoryManagementPage /> },
+      { path: "community", element: <CommunityPage /> },
       { path: "not-found", element: <NotFoundPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
