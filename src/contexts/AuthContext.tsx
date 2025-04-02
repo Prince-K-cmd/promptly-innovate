@@ -52,23 +52,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log("Auth state changed:", event, currentSession?.user?.id);
 
-      // Special handling for email verification
-      if (event === 'SIGNED_IN' && currentSession?.user?.email_confirmed_at && !session) {
-        // This is likely an email verification sign-in
-        // Show a toast but don't update the session yet
-        toast({
-          title: "Email verified successfully",
-          description: "Your email has been verified. Please sign in to continue.",
-        });
-        
-        // Sign out immediately to prevent automatic login
-        setTimeout(async () => {
-          await supabase.auth.signOut();
-        }, 0);
-        
-        return;
-      }
-
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
